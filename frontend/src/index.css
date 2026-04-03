@@ -18,6 +18,12 @@ body {
   min-height: 100vh;
 }
 
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #e7e5e4 0%, #f5f5f4 50%, #e7e5e4 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
 .analysis-progress-fill {
   width: calc(var(--analysis-progress) * 1%);
   animation: analysis-progress-fill 1s ease forwards;
@@ -64,6 +70,15 @@ body {
 
 .animate-ping-once {
   animation: ping-once 0.8s ease-out forwards;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 summary::-webkit-details-marker {

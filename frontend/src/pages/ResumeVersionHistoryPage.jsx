@@ -1,25 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../lib/api";
 import ExportModal from "../components/ExportModal";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
 import { useAppStore } from "../store/appStore";
 import { useResumeStore } from "../store/resumeStore";
 
 async function fetchVersionSummaries(resumeId) {
-  const response = await fetch(`/api/versions/${resumeId}`);
+  const response = await apiFetch(`/api/versions/${resumeId}`);
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.detail || "Failed to load version summaries.");
   return payload.versions;
 }
 
 async function fetchFullVersions(resumeId) {
-  const response = await fetch(`/api/resume/${resumeId}/versions`);
+  const response = await apiFetch(`/api/resume/${resumeId}/versions`);
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.detail || "Failed to load full versions.");
   return payload.versions;
 }
 
 async function fetchVersionDiff(versionId) {
-  const response = await fetch(`/api/versions/${versionId}/diff`);
+  const response = await apiFetch(`/api/versions/${versionId}/diff`);
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.detail || "Failed to load version diff.");
   return payload;

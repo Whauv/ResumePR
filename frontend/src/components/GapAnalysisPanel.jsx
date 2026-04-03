@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import SkeletonBlock from "./SkeletonBlock";
 
 function useCountUp(target) {
   const [value, setValue] = useState(0);
@@ -129,17 +130,27 @@ export default function GapAnalysisPanel({ report, analysisState, analysisError,
     return (
       <section className="rounded-[2rem] border border-dashed border-stone-300 bg-white/90 p-8 shadow-panel">
         <h2 className="text-2xl font-semibold text-stone-950">Skills Gap Analysis</h2>
-        <p className="mt-3 max-w-xl text-sm leading-7 text-stone-600">
-          Upload a resume and parse a job description, then run the gap analysis to see matched and missing keywords by section.
-        </p>
-        <button
-          type="button"
-          onClick={onAnalyze}
-          disabled={analysisState === "loading"}
-          className="mt-5 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#01575c] disabled:opacity-70"
-        >
-          {analysisState === "loading" ? "Analyzing..." : "Run Skills Gap Analysis"}
-        </button>
+        {analysisState === "loading" ? (
+          <div className="mt-5 space-y-4">
+            <SkeletonBlock className="h-32 w-full" />
+            <SkeletonBlock className="h-24 w-full" />
+            <SkeletonBlock className="h-24 w-full" />
+          </div>
+        ) : (
+          <>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-stone-600">
+              Upload a resume and parse a job description, then run the gap analysis to see matched and missing keywords by section.
+            </p>
+            <button
+              type="button"
+              onClick={onAnalyze}
+              disabled={analysisState === "loading"}
+              className="mt-5 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#01575c] disabled:opacity-70"
+            >
+              Run Skills Gap Analysis
+            </button>
+          </>
+        )}
         {analysisError ? <p className="mt-4 text-sm font-medium text-rose-600">{analysisError}</p> : null}
       </section>
     );

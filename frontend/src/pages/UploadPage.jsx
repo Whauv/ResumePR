@@ -1,6 +1,9 @@
 import { useRef, useState } from "react";
+import EmptyState from "../components/EmptyState";
 import CollapsibleCard from "../components/CollapsibleCard";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
+import SkeletonBlock from "../components/SkeletonBlock";
+import { apiFetch } from "../lib/api";
 import { useResumeStore } from "../store/resumeStore";
 
 const acceptedTypes = [
@@ -19,7 +22,7 @@ async function uploadResume(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch("/api/resume/upload", {
+  const response = await apiFetch("/api/resume/upload", {
     method: "POST",
     body: formData
   });
@@ -163,7 +166,21 @@ export default function UploadPage() {
         </section>
 
         <section>
-          <ResumePreviewPanel parsedResume={parsedResume} metadata={metadata} />
+          {uploadState === "loading" ? (
+            <div className="space-y-4">
+              <SkeletonBlock className="h-40 w-full" />
+              <SkeletonBlock className="h-56 w-full" />
+              <SkeletonBlock className="h-32 w-full" />
+            </div>
+          ) : parsedResume ? (
+            <ResumePreviewPanel parsedResume={parsedResume} metadata={metadata} />
+          ) : (
+            <EmptyState
+              art="arrow"
+              title="Upload your resume to get started"
+              description="Once your PDF or DOCX is parsed, the structured preview will appear here."
+            />
+          )}
         </section>
       </div>
     </main>
