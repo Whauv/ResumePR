@@ -1,0 +1,12 @@
+{
+  "name": "resumepr-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "preview:web": "npm --prefix apps/web run preview",
+    "install:web": "npm --prefix apps/web install",
+    "dev:api": "uvicorn main:app --reload --app-dir apps/api"
+  }
+}
