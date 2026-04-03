@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from models.schemas import (
     GapAnalysisRequest,
@@ -32,6 +32,7 @@ def get_connection() -> sqlite3.Connection:
             id TEXT PRIMARY KEY,
             resume_id TEXT NOT NULL,
             job_id TEXT NOT NULL,
+            user_id TEXT NOT NULL DEFAULT '',
             report_json TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
@@ -43,6 +44,7 @@ def get_connection() -> sqlite3.Connection:
             id TEXT PRIMARY KEY,
             resume_id TEXT NOT NULL,
             job_id TEXT NOT NULL,
+            user_id TEXT NOT NULL DEFAULT '',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
         """
@@ -54,11 +56,16 @@ def get_connection() -> sqlite3.Connection:
             batch_id TEXT NOT NULL,
             resume_id TEXT NOT NULL,
             job_id TEXT NOT NULL,
+            user_id TEXT NOT NULL DEFAULT '',
             suggestion_json TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
         """
     )
+    for table_name in ("analyses", "suggestion_batches", "suggestions"):
+        columns = {row[1] for row in connection.execute(f"PRAGMA table_info({table_name})").fetchall()}
+        if "user_id" not in columns:
+            connection.execute(f"ALTER TABLE {table_name} ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
     return connection
 
 
@@ -73,9 +80,17 @@ def fetch_record(connection: sqlite3.Connection, table: str, record_id: str) -> 
     return row[0] if row else None
 
 
-def fetch_resume_and_job(connection: sqlite3.Connection, resume_id: str, job_id: str) -> tuple[ParsedResume, ParsedJob]:
-    resume_payload = fetch_record(connection, "resumes", resume_id)
-    job_payload = fetch_record(connection, "jobs", job_id)
+def fetch_resume_and_job(connection: sqlite3.Connection, user_id: str, resume_id: str, job_id: str) -> tuple[ParsedResume, ParsedJob]:
+    resume_row = connection.execute(
+        "SELECT parsed_json FROM resumes WHERE id = ? AND user_id = ?",
+        (resume_id, user_id),
+    ).fetchone()
+    job_row = connection.execute(
+        "SELECT parsed_json FROM jobs WHERE id = ? AND user_id = ?",
+        (job_id, user_id),
+    ).fetchone()
+    resume_payload = resume_row[0] if resume_row else None
+    job_payload = job_row[0] if job_row else None
 
     if not resume_payload:
         raise HTTPException(status_code=404, detail="Resume not found.")
@@ -89,10 +104,11 @@ def fetch_resume_and_job(connection: sqlite3.Connection, resume_id: str, job_id:
 
 
 @router.post("/gap", response_model=GapAnalysisResponse)
-def create_gap_analysis(request: GapAnalysisRequest) -> GapAnalysisResponse:
+def create_gap_analysis(http_request: Request, request: GapAnalysisRequest) -> GapAnalysisResponse:
+    user_id = http_request.state.user_id
     connection = get_connection()
     try:
-        resume_json, job_json = fetch_resume_and_job(connection, request.resume_id, request.job_id)
+        resume_json, job_json = fetch_resume_and_job(connection, user_id, request.resume_id, request.job_id)
     finally:
         connection.close()
     report = GapReport.model_validate(analyze_gap(resume_json.model_dump(), job_json.model_dump()))
@@ -101,8 +117,8 @@ def create_gap_analysis(request: GapAnalysisRequest) -> GapAnalysisResponse:
     connection = get_connection()
     try:
         connection.execute(
-            "INSERT INTO analyses (id, resume_id, job_id, report_json) VALUES (?, ?, ?, ?)",
-            (analysis_id, request.resume_id, request.job_id, json.dumps(report.model_dump())),
+            "INSERT INTO analyses (id, resume_id, job_id, user_id, report_json) VALUES (?, ?, ?, ?, ?)",
+            (analysis_id, request.resume_id, request.job_id, user_id, json.dumps(report.model_dump())),
         )
         connection.commit()
     finally:
@@ -117,10 +133,11 @@ def create_gap_analysis(request: GapAnalysisRequest) -> GapAnalysisResponse:
 
 
 @router.post("/suggest", response_model=SuggestResponse)
-def create_suggestions(request: SuggestRequest) -> SuggestResponse:
+def create_suggestions(http_request: Request, request: SuggestRequest) -> SuggestResponse:
+    user_id = http_request.state.user_id
     connection = get_connection()
     try:
-        resume_json, job_json = fetch_resume_and_job(connection, request.resume_id, request.job_id)
+        resume_json, job_json = fetch_resume_and_job(connection, user_id, request.resume_id, request.job_id)
     finally:
         connection.close()
 
@@ -138,17 +155,18 @@ def create_suggestions(request: SuggestRequest) -> SuggestResponse:
     connection = get_connection()
     try:
         connection.execute(
-            "INSERT INTO suggestion_batches (id, resume_id, job_id) VALUES (?, ?, ?)",
-            (batch_id, request.resume_id, request.job_id),
+            "INSERT INTO suggestion_batches (id, resume_id, job_id, user_id) VALUES (?, ?, ?, ?)",
+            (batch_id, request.resume_id, request.job_id, user_id),
         )
         connection.executemany(
-            "INSERT INTO suggestions (id, batch_id, resume_id, job_id, suggestion_json) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO suggestions (id, batch_id, resume_id, job_id, user_id, suggestion_json) VALUES (?, ?, ?, ?, ?, ?)",
             [
                 (
                     suggestion.id,
                     batch_id,
                     request.resume_id,
                     request.job_id,
+                    user_id,
                     json.dumps(suggestion.model_dump()),
                 )
                 for suggestion in suggestions

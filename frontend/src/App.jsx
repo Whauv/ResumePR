@@ -1,20 +1,27 @@
 import { useEffect } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import CommandPalette from "./components/CommandPalette";
+import SkeletonBlock from "./components/SkeletonBlock";
+import AuthPage from "./pages/AuthPage";
 import DiffEditorPage from "./pages/DiffEditorPage";
 import JobInputPage from "./pages/JobInputPage";
 import ResumeVersionHistoryPage from "./pages/ResumeVersionHistoryPage";
 import UploadPage from "./pages/UploadPage";
+import { apiFetch } from "./lib/api";
+import { firebaseAuth } from "./lib/firebase";
 import { useAppStore } from "./store/appStore";
+import { useAuthStore } from "./store/authStore";
 import { useResumeStore } from "./store/resumeStore";
 
 async function fetchVersionSummaries(resumeId) {
-  const response = await fetch(`/api/versions/${resumeId}`);
+  const response = await apiFetch(`/api/versions/${resumeId}`);
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.detail || "Failed to load version summaries.");
   return payload.versions;
 }
 
 async function fetchFullVersions(resumeId) {
-  const response = await fetch(`/api/resume/${resumeId}/versions`);
+  const response = await apiFetch(`/api/resume/${resumeId}/versions`);
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.detail || "Failed to load full versions.");
   return payload.versions;
@@ -28,9 +35,40 @@ function formatHeaderDate(timestamp) {
 export default function App() {
   const { activePage, latestVersionId, setActivePage, setLatestVersionId } = useAppStore();
   const { metadata, versions, versionSummaries, restoreVersion, setVersions, setVersionSummaries } = useResumeStore();
+  const { authUser, authState, setAuthLoading, setAuthUser, setSignedOut } = useAuthStore();
   const activeVersion = versionSummaries.find((item) => item.version_id === latestVersionId) || versionSummaries[0] || null;
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const path = window.location.pathname;
+    if (path === "/signup") {
+      setActivePage("resume");
+      return;
+    }
+    if (path === "/analyze" || params.get("job_id")) {
+      setActivePage("jobs");
+    }
+  }, [setActivePage]);
+
+  useEffect(() => {
+    setAuthLoading();
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+      if (user) {
+        const token = await user.getIdToken();
+        localStorage.setItem("resumepr_auth_token", token);
+        localStorage.setItem("resumepr_auth_uid", user.uid);
+        setAuthUser(user);
+      } else {
+        localStorage.removeItem("resumepr_auth_token");
+        localStorage.removeItem("resumepr_auth_uid");
+        setSignedOut();
+      }
+    });
+    return () => unsubscribe();
+  }, [setAuthLoading, setAuthUser, setSignedOut]);
+
+  useEffect(() => {
+    if (!authUser) return;
     if (!metadata?.resumeId) return;
     let cancelled = false;
 
@@ -54,7 +92,23 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [metadata?.resumeId, setVersionSummaries, setVersions, versionSummaries.length, versions.length]);
+  }, [authUser, metadata?.resumeId, setVersionSummaries, setVersions, versionSummaries.length, versions.length]);
+
+  if (authState === "loading") {
+    return (
+      <main className="min-h-screen bg-stone-100 px-4 py-12">
+        <div className="mx-auto max-w-5xl space-y-4">
+          <SkeletonBlock className="h-14 w-full" />
+          <SkeletonBlock className="h-72 w-full" />
+          <SkeletonBlock className="h-72 w-full" />
+        </div>
+      </main>
+    );
+  }
+
+  if (!authUser) {
+    return <AuthPage />;
+  }
 
   return (
     <div>
@@ -127,12 +181,23 @@ export default function App() {
               </div>
             ) : null}
           </details>
+          <button
+            type="button"
+            onClick={() => signOut(firebaseAuth)}
+            className="rounded-full bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-700"
+          >
+            Sign Out
+          </button>
         </div>
       </nav>
       {activePage === "resume" ? <UploadPage /> : null}
       {activePage === "jobs" ? <JobInputPage /> : null}
       {activePage === "diff" ? <DiffEditorPage /> : null}
       {activePage === "versions" ? <ResumeVersionHistoryPage /> : null}
+      <footer className="border-t border-stone-200 bg-white/80 px-4 py-4 text-center text-xs font-medium text-stone-500">
+        Command Palette: Cmd/Ctrl+K
+      </footer>
+      <CommandPalette />
     </div>
   );
 }

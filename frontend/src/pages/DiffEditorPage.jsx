@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import DiffCard from "../components/DiffCard";
+import EmptyState from "../components/EmptyState";
+import SkeletonBlock from "../components/SkeletonBlock";
+import { apiFetch } from "../lib/api";
 import { useAnalysisStore } from "../store/analysisStore";
 import { useAppStore } from "../store/appStore";
 import { useJobStore } from "../store/jobStore";
 import { useResumeStore } from "../store/resumeStore";
 
 async function fetchSuggestions(resumeId, jobId) {
-  const response = await fetch("/api/analysis/suggest", {
+  const response = await apiFetch("/api/analysis/suggest", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ resume_id: resumeId, job_id: jobId })
@@ -17,7 +20,7 @@ async function fetchSuggestions(resumeId, jobId) {
 }
 
 async function applyAcceptedEdits(resumeId, acceptedEditIds) {
-  const response = await fetch("/api/resume/apply-edits", {
+  const response = await apiFetch("/api/resume/apply-edits", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ resume_id: resumeId, accepted_edit_ids: acceptedEditIds })
@@ -211,8 +214,10 @@ export default function DiffEditorPage() {
 
         <section className="mt-8 space-y-5">
           {suggestionState === "loading" ? (
-            <div className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-panel">
-              <p className="text-sm text-stone-500">Generating targeted rewrite suggestions with Gemini...</p>
+            <div className="space-y-4">
+              <SkeletonBlock className="h-56 w-full" />
+              <SkeletonBlock className="h-56 w-full" />
+              <SkeletonBlock className="h-56 w-full" />
             </div>
           ) : null}
 
@@ -229,11 +234,11 @@ export default function DiffEditorPage() {
           ))}
 
           {!sortedSuggestions.length && suggestionState !== "loading" ? (
-            <div className="rounded-[2rem] border border-dashed border-stone-300 bg-white p-8 shadow-panel">
-              <p className="text-sm leading-7 text-stone-500">
-                No AI suggestions are loaded yet. Make sure you have both a parsed resume and parsed job description, then return here.
-              </p>
-            </div>
+            <EmptyState
+              art="check"
+              title="Your resume already matches this job well!"
+              description="Gemini did not find any high-confidence rewrites to propose for the current resume and job pair."
+            />
           ) : null}
         </section>
       </div>

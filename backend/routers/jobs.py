@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import httpx
 from bs4 import BeautifulSoup
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from models.schemas import JobParseRequest, JobParseResponse, ParsedJob
 from services.keyword_extractor import extract_keywords
@@ -30,12 +30,16 @@ def get_connection() -> sqlite3.Connection:
         """
         CREATE TABLE IF NOT EXISTS jobs (
             id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL DEFAULT '',
             source_url TEXT,
             parsed_json TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
         """
     )
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(jobs)").fetchall()}
+    if "user_id" not in columns:
+        connection.execute("ALTER TABLE jobs ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
     return connection
 
 
@@ -182,7 +186,8 @@ def build_parsed_job(text: str, job_title: str, company_name: str) -> ParsedJob:
 
 
 @router.post("/parse", response_model=JobParseResponse)
-async def parse_job(request: JobParseRequest) -> JobParseResponse:
+async def parse_job(http_request: Request, request: JobParseRequest) -> JobParseResponse:
+    user_id = http_request.state.user_id
     if request.url:
         try:
             soup, _html = await fetch_job_page(request.url)
@@ -206,8 +211,8 @@ async def parse_job(request: JobParseRequest) -> JobParseResponse:
     connection = get_connection()
     try:
         connection.execute(
-            "INSERT INTO jobs (id, source_url, parsed_json) VALUES (?, ?, ?)",
-            (job_id, request.url or "", json.dumps(parsed_job.model_dump())),
+            "INSERT INTO jobs (id, user_id, source_url, parsed_json) VALUES (?, ?, ?, ?)",
+            (job_id, user_id, request.url or "", json.dumps(parsed_job.model_dump())),
         )
         connection.commit()
     finally:
@@ -217,11 +222,13 @@ async def parse_job(request: JobParseRequest) -> JobParseResponse:
 
 
 @router.get("/latest/from-extension", response_model=JobParseResponse)
-def get_latest_job() -> JobParseResponse:
+def get_latest_job(request: Request) -> JobParseResponse:
+    user_id = request.state.user_id
     connection = get_connection()
     try:
         row = connection.execute(
-            "SELECT id, parsed_json FROM jobs ORDER BY created_at DESC LIMIT 1"
+            "SELECT id, parsed_json FROM jobs WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+            (user_id,),
         ).fetchone()
     finally:
         connection.close()
@@ -234,12 +241,13 @@ def get_latest_job() -> JobParseResponse:
 
 
 @router.get("/{job_id}", response_model=JobParseResponse)
-def get_job(job_id: str) -> JobParseResponse:
+def get_job(request: Request, job_id: str) -> JobParseResponse:
+    user_id = request.state.user_id
     connection = get_connection()
     try:
         row = connection.execute(
-            "SELECT parsed_json FROM jobs WHERE id = ?",
-            (job_id,),
+            "SELECT parsed_json FROM jobs WHERE id = ? AND user_id = ?",
+            (job_id, user_id),
         ).fetchone()
     finally:
         connection.close()

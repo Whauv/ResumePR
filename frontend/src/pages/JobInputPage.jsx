@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import CollapsibleCard from "../components/CollapsibleCard";
+import EmptyState from "../components/EmptyState";
 import GapAnalysisPanel from "../components/GapAnalysisPanel";
 import JobSummaryPanel from "../components/JobSummaryPanel";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
+import SkeletonBlock from "../components/SkeletonBlock";
+import { apiFetch } from "../lib/api";
 import { useAnalysisStore } from "../store/analysisStore";
 import { useAppStore } from "../store/appStore";
 import { useJobStore } from "../store/jobStore";
@@ -15,7 +18,7 @@ const tabs = [
 ];
 
 async function parseJob(body) {
-  const response = await fetch("/api/jobs/parse", {
+  const response = await apiFetch("/api/jobs/parse", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -31,7 +34,7 @@ async function parseJob(body) {
 }
 
 async function fetchLatestExtensionJob() {
-  const response = await fetch("/api/jobs/latest/from-extension");
+  const response = await apiFetch("/api/jobs/latest/from-extension");
   const payload = await response.json();
   if (!response.ok) {
     throw new Error(payload.detail || "No extension job found yet.");
@@ -40,7 +43,7 @@ async function fetchLatestExtensionJob() {
 }
 
 async function runGapAnalysis(resumeId, jobId) {
-  const response = await fetch("/api/analysis/gap", {
+  const response = await apiFetch("/api/analysis/gap", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -267,7 +270,20 @@ export default function JobInputPage() {
             onAnalyze={handleRunGapAnalysis}
             onFixSection={handleFixSection}
           />
-          <JobSummaryPanel parsedJob={parsedJob} />
+          {jobState === "loading" ? (
+            <div className="space-y-4">
+              <SkeletonBlock className="h-48 w-full" />
+              <SkeletonBlock className="h-36 w-full" />
+            </div>
+          ) : parsedJob ? (
+            <JobSummaryPanel parsedJob={parsedJob} />
+          ) : (
+            <EmptyState
+              art="compass"
+              title="Paste a job URL to begin"
+              description="Analyze a URL, raw text, or extension payload to populate the target job summary."
+            />
+          )}
         </section>
       </div>
     </main>

@@ -1,76 +1,116 @@
 # ResumePR
 
-ResumePR is a monorepo for a resume tailoring product with a FastAPI backend, React frontend, and Chrome extension shell.
+ResumePR is a monorepo for an AI-assisted resume tailoring product with a React web app, FastAPI backend, and Chrome extension.
 
-## Structure
+## Architecture
+
+```text
+Chrome Extension
+    |
+    | extracts job descriptions and syncs authenticated payloads
+    v
+React + Vite + Firebase Auth  --->  FastAPI + Gemini + Firebase Admin  --->  SQLite
+    |                                        |
+    | upload, diff review, history           | parsing, analysis, export
+    v                                        v
+Resume UX                               PDF/DOCX + versioning
+```
+
+## Monorepo
 
 ```text
 ResumePR/
 |-- backend/
 |-- frontend/
-`-- extension/
+|-- extension/
+`-- vercel.json
 ```
 
-## Backend setup
+## Local setup
 
-1. Create and activate a virtual environment.
-2. Install dependencies:
+### Backend
 
 ```bash
 cd backend
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
-```
-
-The first time Phase 3 runs, `sentence-transformers` will load `all-MiniLM-L6-v2` for semantic gap analysis.
-Phase 4 also requires a `GEMINI_API_KEY` environment variable so Gemini 2.0 Flash can generate rewrite suggestions.
-
-3. Start the API server:
-
-```bash
 uvicorn main:app --reload
 ```
 
-The backend runs on `http://127.0.0.1:8000` and stores uploaded resume payloads in `backend/resumes.db`.
+Backend default URL: `http://127.0.0.1:8000`
 
-## Frontend setup
-
-1. Install dependencies:
+### Frontend
 
 ```bash
 cd frontend
 npm install
-```
-
-2. Start the Vite dev server:
-
-```bash
 npm run dev
 ```
 
-The frontend runs on `http://127.0.0.1:5173` and proxies upload requests to the FastAPI server.
+Frontend default URL: `http://127.0.0.1:5173`
 
-## Chrome extension
+### Chrome extension
 
-Load the `extension/` folder as an unpacked extension in Chrome Developer Mode.
+1. Open `chrome://extensions`
+2. Enable Developer Mode
+3. Click `Load unpacked`
+4. Select the `extension/` folder
 
-## Environment
+## Environment variables
 
-Set `GEMINI_API_KEY` before running the backend if you want to use the AI suggestion workflow.
+### Frontend
 
-## Phase 1, 2, 3, and 4 features
+- `VITE_API_URL`
+- `VITE_FIREBASE_CONFIG`
 
-- Upload PDF or DOCX resumes
-- Parse resumes into structured JSON
-- Persist parsed payloads in SQLite with UUID identifiers
-- Review parsed sections in a read-only web preview
-- Analyze job descriptions from URLs or raw pasted text
-- Extract job title, company name, required/preferred skills, experience, and education requirements
-- Sync job postings from the Chrome extension into the web app workflow
-- Run per-section skills gap analysis across Skills, Experience, and Summary
-- Score ATS alignment with matched keywords, missing terms, and red-flag warnings
-- Generate Gemini-powered rewrite suggestions for specific bullets and sections
-- Review suggestions in an accept/reject diff editor with per-card decisions
-- Save accepted edits as resume versions with job metadata and version history
-- Compare version-to-version diffs and restore any saved tailored resume
-- Export saved resume versions as PDF or DOCX with selectable templates
+`VITE_FIREBASE_CONFIG` should be a JSON string containing your Firebase web config.
+
+### Backend
+
+- `GEMINI_API_KEY`
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
+- `PORT`
+
+## Gemini API key
+
+1. Open Google AI Studio
+2. Create a Gemini API key on the free tier
+3. Set the key as `GEMINI_API_KEY`
+
+## Firebase project setup
+
+1. Create a Firebase project
+2. Enable Authentication
+3. Turn on Email/Password
+4. Turn on Google OAuth
+5. Create a Firebase web app and copy its config into `VITE_FIREBASE_CONFIG`
+6. Create a service account key
+7. Put the full service account JSON into `FIREBASE_SERVICE_ACCOUNT_JSON`
+
+## Deployment
+
+### Frontend on Vercel
+
+Use the included `vercel.json` and set:
+
+- `VITE_API_URL`
+- `VITE_FIREBASE_CONFIG`
+
+### Backend on Railway or Render
+
+Use the included `backend/Dockerfile` and `backend/Procfile` and set:
+
+- `GEMINI_API_KEY`
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
+
+## Features
+
+- Resume upload and parsing for PDF and DOCX
+- Job description ingestion from URL, raw text, or extension DOM extraction
+- Firebase-authenticated, user-scoped backend data
+- Per-section skills gap analysis and ATS scoring
+- Gemini-powered accept/reject diff review
+- Resume version history, compare, restore, and export
+- Command palette, skeleton loaders, empty states, and extension handoff

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../lib/api";
 
 const templates = ["modern", "classic", "minimal"];
 
@@ -69,7 +70,7 @@ export default function ExportModal({ version, initialFormat = "pdf", onClose })
   async function handleDownload() {
     if (!version) return;
     setState("loading");
-    const response = await fetch(`/api/versions/${version.version_id}/export?format=${format}&template=${template}`, {
+    const response = await apiFetch(`/api/versions/${version.version_id}/export?format=${format}&template=${template}`, {
       method: "POST"
     });
     if (!response.ok) {

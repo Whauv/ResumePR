@@ -6,7 +6,7 @@ import sqlite3
 from pathlib import Path
 
 from docx import Document
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
@@ -33,6 +33,7 @@ def get_connection() -> sqlite3.Connection:
         CREATE TABLE IF NOT EXISTS resume_versions (
             version_id TEXT PRIMARY KEY,
             base_resume_id TEXT NOT NULL,
+            user_id TEXT NOT NULL DEFAULT '',
             version_number INTEGER NOT NULL,
             job_id TEXT NOT NULL,
             company_name TEXT,
@@ -46,6 +47,9 @@ def get_connection() -> sqlite3.Connection:
         )
         """
     )
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(resume_versions)").fetchall()}
+    if "user_id" not in columns:
+        connection.execute("ALTER TABLE resume_versions ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
     return connection
 
 
@@ -62,17 +66,17 @@ def row_to_version(row: sqlite3.Row | tuple) -> ResumeVersion:
         version_id=row[0],
         base_resume_id=row[1],
         metadata=ResumeVersionMetadata(
-            version_number=row[2],
-            job_id=row[3],
-            company_name=row[4] or "",
-            role=row[5] or "",
-            accepted_count=row[6],
-            rejected_count=row[7],
-            timestamp=row[9],
-            ats_score_before=float(row[10] or 0),
-            ats_score_after=float(row[11] or 0),
+            version_number=row[3],
+            job_id=row[4],
+            company_name=row[5] or "",
+            role=row[6] or "",
+            accepted_count=row[7],
+            rejected_count=row[8],
+            timestamp=row[10],
+            ats_score_before=float(row[11] or 0),
+            ats_score_after=float(row[12] or 0),
         ),
-        resume_json=ParsedResume.model_validate(json.loads(row[8])),
+        resume_json=ParsedResume.model_validate(json.loads(row[9])),
     )
 
 
@@ -196,19 +200,20 @@ def build_docx_resume(resume: ParsedResume, template: str) -> io.BytesIO:
 
 
 @router.get("/{resume_id}", response_model=VersionListResponse)
-def list_versions(resume_id: str) -> VersionListResponse:
+def list_versions(request: Request, resume_id: str) -> VersionListResponse:
+    user_id = request.state.user_id
     connection = get_connection()
     try:
         ensure_version_columns(connection)
         rows = connection.execute(
             """
-            SELECT version_id, base_resume_id, version_number, job_id, company_name, role,
+            SELECT version_id, base_resume_id, user_id, version_number, job_id, company_name, role,
                    accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after
             FROM resume_versions
-            WHERE base_resume_id = ?
+            WHERE base_resume_id = ? AND user_id = ?
             ORDER BY created_at DESC
             """,
-            (resume_id,),
+            (resume_id, user_id),
         ).fetchall()
     finally:
         connection.close()
@@ -217,13 +222,13 @@ def list_versions(resume_id: str) -> VersionListResponse:
         versions=[
             VersionSummary(
                 version_id=row[0],
-                version_number=row[2],
-                job_title=row[5] or "",
-                company_name=row[4] or "",
-                timestamp=row[9],
-                accepted_edits_count=row[6],
-                ats_score_before=float(row[10] or 0),
-                ats_score_after=float(row[11] or 0),
+                version_number=row[3],
+                job_title=row[6] or "",
+                company_name=row[5] or "",
+                timestamp=row[10],
+                accepted_edits_count=row[7],
+                ats_score_before=float(row[11] or 0),
+                ats_score_after=float(row[12] or 0),
             )
             for row in rows
         ]
@@ -231,32 +236,33 @@ def list_versions(resume_id: str) -> VersionListResponse:
 
 
 @router.get("/{version_id}/diff", response_model=VersionDiffResponse)
-def get_version_diff(version_id: str) -> VersionDiffResponse:
+def get_version_diff(request: Request, version_id: str) -> VersionDiffResponse:
+    user_id = request.state.user_id
     connection = get_connection()
     try:
         ensure_version_columns(connection)
         row = connection.execute(
             """
-            SELECT version_id, base_resume_id, version_number, job_id, company_name, role,
+            SELECT version_id, base_resume_id, user_id, version_number, job_id, company_name, role,
                    accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after
             FROM resume_versions
-            WHERE version_id = ?
+            WHERE version_id = ? AND user_id = ?
             """,
-            (version_id,),
+            (version_id, user_id),
         ).fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Version not found.")
 
         previous_row = connection.execute(
             """
-            SELECT version_id, base_resume_id, version_number, job_id, company_name, role,
+            SELECT version_id, base_resume_id, user_id, version_number, job_id, company_name, role,
                    accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after
             FROM resume_versions
-            WHERE base_resume_id = ? AND version_number < ?
+            WHERE base_resume_id = ? AND user_id = ? AND version_number < ?
             ORDER BY version_number DESC
             LIMIT 1
             """,
-            (row[1], row[2]),
+            (row[1], user_id, row[3]),
         ).fetchone()
     finally:
         connection.close()
@@ -266,21 +272,23 @@ def get_version_diff(version_id: str) -> VersionDiffResponse:
 
 @router.post("/{version_id}/export")
 def export_version(
+    request: Request,
     version_id: str,
     format: str = Query(..., pattern="^(pdf|docx)$"),
     template: str = Query("modern", pattern="^(modern|classic|minimal)$"),
 ):
+    user_id = request.state.user_id
     connection = get_connection()
     try:
         ensure_version_columns(connection)
         row = connection.execute(
             """
-            SELECT version_id, base_resume_id, version_number, job_id, company_name, role,
+            SELECT version_id, base_resume_id, user_id, version_number, job_id, company_name, role,
                    accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after
             FROM resume_versions
-            WHERE version_id = ?
+            WHERE version_id = ? AND user_id = ?
             """,
-            (version_id,),
+            (version_id, user_id),
         ).fetchone()
     finally:
         connection.close()
