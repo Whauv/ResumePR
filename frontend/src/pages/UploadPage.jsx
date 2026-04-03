@@ -1,0 +1,253 @@
+import { useRef, useState } from "react";
+import CollapsibleCard from "../components/CollapsibleCard";
+import { useResumeStore } from "../store/resumeStore";
+
+const acceptedTypes = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+];
+
+function fileBadge(file) {
+  if (!file) return null;
+  const extension = file.name.split(".").pop()?.toUpperCase();
+  const icon = extension === "PDF" ? "PDF" : "DOCX";
+  return { extension, icon };
+}
+
+async function uploadResume(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch("/api/resume/upload", {
+    method: "POST",
+    body: formData
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.detail || "Upload failed.");
+  }
+
+  return response.json();
+}
+
+export default function UploadPage() {
+  const inputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const {
+    file,
+    uploadState,
+    error,
+    parsedResume,
+    metadata,
+    setFile,
+    setUploadState,
+    setError,
+    setParsedResume
+  } = useResumeStore();
+
+  const badge = fileBadge(file);
+
+  function handleSelectedFile(nextFile) {
+    if (!nextFile) return;
+    if (!acceptedTypes.includes(nextFile.type) && !nextFile.name.endsWith(".docx") && !nextFile.name.endsWith(".pdf")) {
+      setError("Please upload a PDF or DOCX resume.");
+      return;
+    }
+    setFile(nextFile);
+    setUploadState("idle");
+  }
+
+  async function handleUpload() {
+    if (!file) {
+      setError("Choose a resume file first.");
+      return;
+    }
+
+    try {
+      setUploadState("loading");
+      const payload = await uploadResume(file);
+      setParsedResume(payload);
+    } catch (uploadError) {
+      setError(uploadError.message);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(1,105,111,0.12),_transparent_38%),linear-gradient(180deg,_#f8fafc_0%,_#eef2f2_100%)] px-4 py-12 text-stone-900">
+      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="space-y-6">
+          <div className="space-y-3">
+            <span className="inline-flex rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
+              Resume Parser
+            </span>
+            <h1 className="max-w-xl text-4xl font-semibold tracking-tight text-stone-950">
+              Turn raw resumes into structured data you can review like a PR.
+            </h1>
+            <p className="max-w-2xl text-base leading-7 text-stone-600">
+              Phase 1 focuses on resume upload and parsing so the web app can become the foundation for
+              accept/reject diffs, version history, and extension sync in later phases.
+            </p>
+          </div>
+
+          <div
+            className={`rounded-[2rem] border-2 border-dashed bg-white/90 p-8 shadow-panel transition ${
+              isDragging ? "border-accent bg-accent/5" : "border-stone-300"
+            }`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsDragging(false);
+              handleSelectedFile(event.dataTransfer.files?.[0]);
+            }}
+          >
+            <div className="space-y-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-900 text-sm font-semibold text-white">
+                {badge?.icon || "CV"}
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-stone-950">Upload your resume</h2>
+                <p className="mt-2 text-sm leading-6 text-stone-500">
+                  Drag a PDF or DOCX file here, or browse from your device. We will parse the document
+                  into summary, experience, education, and skills.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="inline-flex items-center justify-center rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
+                >
+                  Choose file
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUpload}
+                  disabled={uploadState === "loading"}
+                  className="inline-flex items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#01575c] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {uploadState === "loading" ? "Parsing..." : "Upload resume"}
+                </button>
+              </div>
+
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".pdf,.docx"
+                className="hidden"
+                onChange={(event) => handleSelectedFile(event.target.files?.[0])}
+              />
+
+              {file ? (
+                <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-medium">{file.name}</span>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-accent">
+                      {badge?.extension}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+
+              {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-5">
+          <CollapsibleCard
+            title="Parsed Preview"
+            subtitle={metadata ? `${metadata.fileName} - ${metadata.resumeId}` : "Read-only structured resume output"}
+          >
+            {parsedResume ? (
+              <div className="space-y-5">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-400">Name</p>
+                  <p className="mt-2 text-lg font-semibold text-stone-900">{parsedResume.name || "Not detected"}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-400">Contact</p>
+                  <pre className="mt-2 overflow-x-auto rounded-2xl bg-stone-50 p-4 text-sm text-stone-700">
+                    {JSON.stringify(parsedResume.contact, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm leading-6 text-stone-500">
+                Parsed data will appear here after a successful upload.
+              </p>
+            )}
+          </CollapsibleCard>
+
+          <CollapsibleCard title="Summary" defaultOpen={false}>
+            <p className="text-sm leading-7 text-stone-700">{parsedResume?.summary || "No summary detected yet."}</p>
+          </CollapsibleCard>
+
+          <CollapsibleCard title="Experience" defaultOpen={false}>
+            <div className="space-y-4">
+              {(parsedResume?.experience || []).length ? (
+                parsedResume.experience.map((item, index) => (
+                  <article key={`${item.title}-${index}`} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                    <h3 className="font-semibold text-stone-900">{item.title || "Untitled role"}</h3>
+                    <p className="mt-1 text-sm text-stone-600">
+                      {[item.company, item.dates].filter(Boolean).join(" - ") || "Details unavailable"}
+                    </p>
+                    <ul className="mt-3 space-y-2 text-sm leading-6 text-stone-700">
+                      {item.bullets.map((bullet, bulletIndex) => (
+                        <li key={bulletIndex} className="rounded-xl bg-white px-3 py-2">
+                          {bullet}
+                        </li>
+                      ))}
+                    </ul>
+                  </article>
+                ))
+              ) : (
+                <p className="text-sm text-stone-500">No experience entries detected yet.</p>
+              )}
+            </div>
+          </CollapsibleCard>
+
+          <CollapsibleCard title="Education" defaultOpen={false}>
+            <div className="space-y-4">
+              {(parsedResume?.education || []).length ? (
+                parsedResume.education.map((item, index) => (
+                  <article key={`${item.degree}-${index}`} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                    <h3 className="font-semibold text-stone-900">{item.degree || "Degree not detected"}</h3>
+                    <p className="mt-1 text-sm text-stone-600">
+                      {[item.institution, item.dates].filter(Boolean).join(" - ") || "Details unavailable"}
+                    </p>
+                  </article>
+                ))
+              ) : (
+                <p className="text-sm text-stone-500">No education entries detected yet.</p>
+              )}
+            </div>
+          </CollapsibleCard>
+
+          <CollapsibleCard title="Skills" defaultOpen={false}>
+            {(parsedResume?.skills || []).length ? (
+              <div className="flex flex-wrap gap-2">
+                {parsedResume.skills.map((skill, index) => (
+                  <span
+                    key={`${skill}-${index}`}
+                    className="rounded-full border border-accent/20 bg-accent/10 px-3 py-2 text-sm font-medium text-accent"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-stone-500">No skills detected yet.</p>
+            )}
+          </CollapsibleCard>
+        </section>
+      </div>
+    </main>
+  );
+}
