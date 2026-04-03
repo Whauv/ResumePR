@@ -7,6 +7,7 @@ export const useResumeStore = create((set) => ({
   parsedResume: null,
   metadata: null,
   versions: [],
+  versionSummaries: [],
   setFile: (file) => set({ file, error: "" }),
   clearFile: () => set({ file: null }),
   setUploadState: (uploadState) => set({ uploadState }),
@@ -33,7 +34,27 @@ export const useResumeStore = create((set) => ({
           resume_json: payload.updated_resume
         },
         ...state.versions
+      ],
+      versionSummaries: [
+        {
+          version_id: payload.version_id,
+          version_number: payload.metadata.version_number,
+          job_title: payload.metadata.role,
+          company_name: payload.metadata.company_name,
+          timestamp: payload.metadata.timestamp,
+          accepted_edits_count: payload.metadata.accepted_count,
+          ats_score_before: payload.metadata.ats_score_before,
+          ats_score_after: payload.metadata.ats_score_after
+        },
+        ...state.versionSummaries
       ]
     })),
-  setVersions: (versions) => set({ versions })
+  setVersions: (versions) => set({ versions }),
+  setVersionSummaries: (versionSummaries) => set({ versionSummaries }),
+  restoreVersion: (versionId) =>
+    set((state) => {
+      const version = state.versions.find((item) => item.version_id === versionId);
+      if (!version) return {};
+      return { parsedResume: version.resume_json };
+    })
 }));

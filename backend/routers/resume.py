@@ -12,6 +12,7 @@ from models.schemas import (
     ApplyEditsRequest,
     ApplyEditsResponse,
     EditSuggestion,
+    GapReport,
     JobParseResponse,
     ParsedResume,
     ResumeUploadResponse,
@@ -19,6 +20,7 @@ from models.schemas import (
     ResumeVersionListResponse,
     ResumeVersionMetadata,
 )
+from services.gap_analyzer import analyze_gap
 from services.parser import parse_resume
 
 router = APIRouter(prefix="/api/resume", tags=["resume"])
@@ -55,6 +57,11 @@ def get_connection() -> sqlite3.Connection:
         )
         """
     )
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(resume_versions)").fetchall()}
+    if "ats_score_before" not in columns:
+        connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_before REAL DEFAULT 0")
+    if "ats_score_after" not in columns:
+        connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_after REAL DEFAULT 0")
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS suggestion_batches (
@@ -120,6 +127,8 @@ def build_version_metadata(
     accepted_count: int,
     rejected_count: int,
     created_at: str,
+    ats_score_before: float = 0.0,
+    ats_score_after: float = 0.0,
 ) -> ResumeVersionMetadata:
     return ResumeVersionMetadata(
         version_number=version_number,
@@ -129,6 +138,8 @@ def build_version_metadata(
         timestamp=created_at,
         accepted_count=accepted_count,
         rejected_count=rejected_count,
+        ats_score_before=ats_score_before,
+        ats_score_after=ats_score_after,
     )
 
 
@@ -228,6 +239,9 @@ def apply_edits(request: ApplyEditsRequest) -> ApplyEditsResponse:
     accepted_count = len(suggestions)
     rejected_count = int(total_suggestions) - accepted_count
     job_payload = JobParseResponse.model_validate({"job_id": job_id, **json.loads(job_row[0])})
+    original_resume = ParsedResume.model_validate(json.loads(resume_row[0]))
+    gap_before = GapReport.model_validate(analyze_gap(original_resume.model_dump(), job_payload.model_dump()))
+    gap_after = GapReport.model_validate(analyze_gap(updated_resume.model_dump(), job_payload.model_dump()))
     created_at = datetime.now(UTC).isoformat()
     metadata = build_version_metadata(
         version_number=version_number,
@@ -237,6 +251,8 @@ def apply_edits(request: ApplyEditsRequest) -> ApplyEditsResponse:
         accepted_count=accepted_count,
         rejected_count=rejected_count,
         created_at=created_at,
+        ats_score_before=gap_before.overall_score,
+        ats_score_after=gap_after.overall_score,
     )
 
     connection = get_connection()
@@ -245,8 +261,8 @@ def apply_edits(request: ApplyEditsRequest) -> ApplyEditsResponse:
             """
             INSERT INTO resume_versions (
                 version_id, base_resume_id, version_number, job_id, company_name, role,
-                accepted_count, rejected_count, resume_json, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 version_id,
@@ -259,6 +275,8 @@ def apply_edits(request: ApplyEditsRequest) -> ApplyEditsResponse:
                 rejected_count,
                 json.dumps(updated_resume.model_dump()),
                 created_at,
+                gap_before.overall_score,
+                gap_after.overall_score,
             ),
         )
         connection.commit()
@@ -279,7 +297,7 @@ def list_versions(resume_id: str) -> ResumeVersionListResponse:
         rows = connection.execute(
             """
             SELECT version_id, base_resume_id, version_number, job_id, company_name, role,
-                   accepted_count, rejected_count, resume_json, created_at
+                   accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after
             FROM resume_versions
             WHERE base_resume_id = ?
             ORDER BY version_number DESC
@@ -301,6 +319,8 @@ def list_versions(resume_id: str) -> ResumeVersionListResponse:
                 accepted_count=row[6],
                 rejected_count=row[7],
                 created_at=row[9],
+                ats_score_before=float(row[10] or 0),
+                ats_score_after=float(row[11] or 0),
             ),
             resume_json=ParsedResume.model_validate(json.loads(row[8])),
         )

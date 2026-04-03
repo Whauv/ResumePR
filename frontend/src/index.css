@@ -65,3 +65,7 @@ body {
 .animate-ping-once {
   animation: ping-once 0.8s ease-out forwards;
 }
+
+summary::-webkit-details-marker {
+  display: none;
+}

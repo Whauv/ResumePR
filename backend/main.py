@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers.analysis import router as analysis_router
 from routers.jobs import router as jobs_router
 from routers.resume import router as resume_router
+from routers.versions import router as versions_router
 
 app = FastAPI(title="ResumePR API", version="0.1.0")
 
@@ -19,6 +20,7 @@ app.add_middleware(
 app.include_router(resume_router)
 app.include_router(jobs_router)
 app.include_router(analysis_router)
+app.include_router(versions_router)
 
 
 @app.get("/health")

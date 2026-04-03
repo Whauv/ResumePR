@@ -130,6 +130,8 @@ class ResumeVersionMetadata(BaseModel):
     timestamp: str
     accepted_count: int = 0
     rejected_count: int = 0
+    ats_score_before: float = 0.0
+    ats_score_after: float = 0.0
 
 
 class ResumeVersion(BaseModel):
@@ -147,3 +149,31 @@ class ApplyEditsResponse(BaseModel):
 
 class ResumeVersionListResponse(BaseModel):
     versions: list[ResumeVersion] = Field(default_factory=list)
+
+
+class VersionSummary(BaseModel):
+    version_id: str
+    version_number: int
+    job_title: str = ""
+    company_name: str = ""
+    timestamp: str
+    accepted_edits_count: int = 0
+    ats_score_before: float = 0.0
+    ats_score_after: float = 0.0
+
+
+class VersionListResponse(BaseModel):
+    versions: list[VersionSummary] = Field(default_factory=list)
+
+
+class VersionDiffItem(BaseModel):
+    section: str
+    field: str
+    before: str
+    after: str
+
+
+class VersionDiffResponse(BaseModel):
+    version_id: str
+    previous_version_id: str | None = None
+    changes: list[VersionDiffItem] = Field(default_factory=list)
