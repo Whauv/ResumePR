@@ -7,7 +7,7 @@
     <style>
       body {
         margin: 0;
-        min-width: 280px;
+        min-width: 320px;
         padding: 20px;
         font-family: Arial, sans-serif;
         background: #f5f7f7;
@@ -23,11 +23,71 @@
         font-size: 12px;
         font-weight: 700;
       }
+
+      button {
+        width: 100%;
+        margin-top: 16px;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 16px;
+        background: #01696f;
+        color: white;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+      }
+
+      .panel {
+        margin-top: 16px;
+        border-radius: 18px;
+        background: white;
+        padding: 14px;
+      }
+
+      .meta {
+        margin: 6px 0 0;
+        font-size: 13px;
+        color: #475569;
+      }
+
+      .toast {
+        margin-top: 12px;
+        border-radius: 14px;
+        padding: 10px 12px;
+        font-size: 13px;
+        display: none;
+      }
+
+      .toast.show {
+        display: block;
+      }
+
+      .toast.success {
+        background: rgba(1, 105, 111, 0.12);
+        color: #01696f;
+      }
+
+      .toast.error {
+        background: rgba(225, 29, 72, 0.12);
+        color: #be123c;
+      }
     </style>
   </head>
   <body>
-    <span class="badge">Phase 1</span>
+    <span class="badge">Phase 2</span>
     <h1>ResumePR</h1>
-    <p>Extension scaffolding is ready for future job post extraction and sync.</p>
+    <p>Extract the active job posting and send it to Resume Modifier for analysis.</p>
+    <div class="panel">
+      <strong id="job-title">Waiting for job page</strong>
+      <p class="meta" id="company-name">Open a supported job board tab to begin.</p>
+    </div>
+    <button id="send-button" type="button">Send to Resume Modifier</button>
+    <div class="toast" id="toast"></div>
+    <script src="popup.js"></script>
   </body>
-  </html>
+</html>

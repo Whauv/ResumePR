@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@property --analysis-progress {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
 :root {
   color: #0f172a;
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f2 100%);
@@ -10,4 +16,22 @@
 
 body {
   min-height: 100vh;
+}
+
+.analysis-progress-fill {
+  width: calc(var(--analysis-progress) * 1%);
+  animation: analysis-progress-fill 1s ease forwards;
+}
+
+.analysis-progress-text {
+  counter-reset: analysis-value var(--analysis-progress);
+}
+
+@keyframes analysis-progress-fill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: calc(var(--analysis-progress) * 1%);
+  }
 }
