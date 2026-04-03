@@ -6,6 +6,7 @@ export const useResumeStore = create((set) => ({
   error: "",
   parsedResume: null,
   metadata: null,
+  versions: [],
   setFile: (file) => set({ file, error: "" }),
   clearFile: () => set({ file: null }),
   setUploadState: (uploadState) => set({ uploadState }),
@@ -21,5 +22,18 @@ export const useResumeStore = create((set) => ({
       },
       uploadState: "success",
       error: ""
-    })
+    }),
+  setUpdatedResumeVersion: (payload) =>
+    set((state) => ({
+      parsedResume: payload.updated_resume,
+      versions: [
+        {
+          version_id: payload.version_id,
+          metadata: payload.metadata,
+          resume_json: payload.updated_resume
+        },
+        ...state.versions
+      ]
+    })),
+  setVersions: (versions) => set({ versions })
 }));

@@ -23,6 +23,7 @@ python -m spacy download en_core_web_sm
 ```
 
 The first time Phase 3 runs, `sentence-transformers` will load `all-MiniLM-L6-v2` for semantic gap analysis.
+Phase 4 also requires a `GEMINI_API_KEY` environment variable so Gemini 2.0 Flash can generate rewrite suggestions.
 
 3. Start the API server:
 
@@ -53,7 +54,11 @@ The frontend runs on `http://127.0.0.1:5173` and proxies upload requests to the 
 
 Load the `extension/` folder as an unpacked extension in Chrome Developer Mode.
 
-## Phase 1, 2, and 3 features
+## Environment
+
+Set `GEMINI_API_KEY` before running the backend if you want to use the AI suggestion workflow.
+
+## Phase 1, 2, 3, and 4 features
 
 - Upload PDF or DOCX resumes
 - Parse resumes into structured JSON
@@ -64,4 +69,6 @@ Load the `extension/` folder as an unpacked extension in Chrome Developer Mode.
 - Sync job postings from the Chrome extension into the web app workflow
 - Run per-section skills gap analysis across Skills, Experience, and Summary
 - Score ATS alignment with matched keywords, missing terms, and red-flag warnings
-- Stage a Phase 4 handoff target for the future accept/reject diff editor
+- Generate Gemini-powered rewrite suggestions for specific bullets and sections
+- Review suggestions in an accept/reject diff editor with per-card decisions
+- Save accepted edits as resume versions with job metadata and version history
