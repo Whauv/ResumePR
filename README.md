@@ -72,3 +72,5 @@ Set `GEMINI_API_KEY` before running the backend if you want to use the AI sugges
 - Generate Gemini-powered rewrite suggestions for specific bullets and sections
 - Review suggestions in an accept/reject diff editor with per-card decisions
 - Save accepted edits as resume versions with job metadata and version history
+- Compare version-to-version diffs and restore any saved tailored resume
+- Export saved resume versions as PDF or DOCX with selectable templates
