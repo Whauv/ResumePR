@@ -4,3 +4,8 @@ python-multipart==0.0.20
 pdfminer.six==20250506
 python-docx==1.2.0
 pydantic==2.11.7
+httpx==0.28.1
+beautifulsoup4==4.13.4
+spacy==3.8.7
+sentence-transformers==5.1.0
+scikit-learn==1.7.1

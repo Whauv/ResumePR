@@ -10,6 +10,7 @@ export const useResumeStore = create((set) => ({
   clearFile: () => set({ file: null }),
   setUploadState: (uploadState) => set({ uploadState }),
   setError: (error) => set({ error, uploadState: "error" }),
+  clearError: () => set({ error: "" }),
   setParsedResume: (payload) =>
     set({
       parsedResume: payload.parsed_resume,
