@@ -1,5 +1,6 @@
-import DiffEditorPlaceholder from "./pages/DiffEditorPlaceholder";
+import DiffEditorPage from "./pages/DiffEditorPage";
 import JobInputPage from "./pages/JobInputPage";
+import ResumeVersionHistoryPage from "./pages/ResumeVersionHistoryPage";
 import UploadPage from "./pages/UploadPage";
 import { useAppStore } from "./store/appStore";
 
@@ -37,11 +38,21 @@ export default function App() {
           >
             Diff Editor
           </button>
+          <button
+            type="button"
+            onClick={() => setActivePage("versions")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              activePage === "versions" ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-600"
+            }`}
+          >
+            Version History
+          </button>
         </div>
       </nav>
       {activePage === "resume" ? <UploadPage /> : null}
       {activePage === "jobs" ? <JobInputPage /> : null}
-      {activePage === "diff" ? <DiffEditorPlaceholder /> : null}
+      {activePage === "diff" ? <DiffEditorPage /> : null}
+      {activePage === "versions" ? <ResumeVersionHistoryPage /> : null}
     </div>
   );
 }

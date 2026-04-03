@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -91,3 +91,59 @@ class GapAnalysisResponse(BaseModel):
     resume_id: str
     job_id: str
     report: GapReport
+
+
+class EditSuggestion(BaseModel):
+    id: str = ""
+    section: Literal["experience", "skills", "summary"]
+    section_index: int
+    bullet_index: int
+    original_text: str
+    suggested_text: str
+    reason: str
+    keywords_added: list[str] = Field(default_factory=list)
+    confidence: float
+
+
+class SuggestRequest(BaseModel):
+    resume_id: str
+    job_id: str
+
+
+class SuggestResponse(BaseModel):
+    suggestion_batch_id: str
+    resume_id: str
+    job_id: str
+    suggestions: list[EditSuggestion] = Field(default_factory=list)
+
+
+class ApplyEditsRequest(BaseModel):
+    resume_id: str
+    accepted_edit_ids: list[str] = Field(default_factory=list)
+
+
+class ResumeVersionMetadata(BaseModel):
+    version_number: int
+    job_id: str
+    company_name: str = ""
+    role: str = ""
+    timestamp: str
+    accepted_count: int = 0
+    rejected_count: int = 0
+
+
+class ResumeVersion(BaseModel):
+    version_id: str
+    base_resume_id: str
+    metadata: ResumeVersionMetadata
+    resume_json: ParsedResume
+
+
+class ApplyEditsResponse(BaseModel):
+    version_id: str
+    updated_resume: ParsedResume
+    metadata: ResumeVersionMetadata
+
+
+class ResumeVersionListResponse(BaseModel):
+    versions: list[ResumeVersion] = Field(default_factory=list)

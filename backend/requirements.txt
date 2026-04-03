@@ -9,3 +9,4 @@ beautifulsoup4==4.13.4
 spacy==3.8.7
 sentence-transformers==5.1.0
 scikit-learn==1.7.1
+google-genai==1.30.0

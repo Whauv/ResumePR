@@ -13,7 +13,10 @@ from models.schemas import (
     GapReport,
     ParsedJob,
     ParsedResume,
+    SuggestRequest,
+    SuggestResponse,
 )
+from services.ai_suggester import generate_suggestions
 from services.gap_analyzer import analyze_gap
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
@@ -34,6 +37,28 @@ def get_connection() -> sqlite3.Connection:
         )
         """
     )
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS suggestion_batches (
+            id TEXT PRIMARY KEY,
+            resume_id TEXT NOT NULL,
+            job_id TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS suggestions (
+            id TEXT PRIMARY KEY,
+            batch_id TEXT NOT NULL,
+            resume_id TEXT NOT NULL,
+            job_id TEXT NOT NULL,
+            suggestion_json TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
     return connection
 
 
@@ -48,22 +73,28 @@ def fetch_record(connection: sqlite3.Connection, table: str, record_id: str) -> 
     return row[0] if row else None
 
 
-@router.post("/gap", response_model=GapAnalysisResponse)
-def create_gap_analysis(request: GapAnalysisRequest) -> GapAnalysisResponse:
-    connection = get_connection()
-    try:
-        resume_payload = fetch_record(connection, "resumes", request.resume_id)
-        job_payload = fetch_record(connection, "jobs", request.job_id)
-    finally:
-        connection.close()
+def fetch_resume_and_job(connection: sqlite3.Connection, resume_id: str, job_id: str) -> tuple[ParsedResume, ParsedJob]:
+    resume_payload = fetch_record(connection, "resumes", resume_id)
+    job_payload = fetch_record(connection, "jobs", job_id)
 
     if not resume_payload:
         raise HTTPException(status_code=404, detail="Resume not found.")
     if not job_payload:
         raise HTTPException(status_code=404, detail="Job not found.")
 
-    resume_json = ParsedResume.model_validate(json.loads(resume_payload))
-    job_json = ParsedJob.model_validate(json.loads(job_payload))
+    return (
+        ParsedResume.model_validate(json.loads(resume_payload)),
+        ParsedJob.model_validate(json.loads(job_payload)),
+    )
+
+
+@router.post("/gap", response_model=GapAnalysisResponse)
+def create_gap_analysis(request: GapAnalysisRequest) -> GapAnalysisResponse:
+    connection = get_connection()
+    try:
+        resume_json, job_json = fetch_resume_and_job(connection, request.resume_id, request.job_id)
+    finally:
+        connection.close()
     report = GapReport.model_validate(analyze_gap(resume_json.model_dump(), job_json.model_dump()))
 
     analysis_id = str(uuid4())
@@ -82,4 +113,54 @@ def create_gap_analysis(request: GapAnalysisRequest) -> GapAnalysisResponse:
         resume_id=request.resume_id,
         job_id=request.job_id,
         report=report,
+    )
+
+
+@router.post("/suggest", response_model=SuggestResponse)
+def create_suggestions(request: SuggestRequest) -> SuggestResponse:
+    connection = get_connection()
+    try:
+        resume_json, job_json = fetch_resume_and_job(connection, request.resume_id, request.job_id)
+    finally:
+        connection.close()
+
+    gap_report = GapReport.model_validate(analyze_gap(resume_json.model_dump(), job_json.model_dump()))
+    try:
+        suggestions = generate_suggestions(
+            resume_json.model_dump(),
+            job_json.model_dump(),
+            gap_report.model_dump(),
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    batch_id = str(uuid4())
+    connection = get_connection()
+    try:
+        connection.execute(
+            "INSERT INTO suggestion_batches (id, resume_id, job_id) VALUES (?, ?, ?)",
+            (batch_id, request.resume_id, request.job_id),
+        )
+        connection.executemany(
+            "INSERT INTO suggestions (id, batch_id, resume_id, job_id, suggestion_json) VALUES (?, ?, ?, ?, ?)",
+            [
+                (
+                    suggestion.id,
+                    batch_id,
+                    request.resume_id,
+                    request.job_id,
+                    json.dumps(suggestion.model_dump()),
+                )
+                for suggestion in suggestions
+            ],
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    return SuggestResponse(
+        suggestion_batch_id=batch_id,
+        resume_id=request.resume_id,
+        job_id=request.job_id,
+        suggestions=suggestions,
     )
