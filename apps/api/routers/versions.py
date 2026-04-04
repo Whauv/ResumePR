@@ -40,6 +40,7 @@ def get_connection() -> sqlite3.Connection:
             role TEXT,
             accepted_count INTEGER NOT NULL,
             rejected_count INTEGER NOT NULL,
+            preserved_docx_blob BLOB,
             resume_json TEXT NOT NULL,
             created_at TEXT NOT NULL,
             ats_score_before REAL DEFAULT 0,
@@ -59,6 +60,11 @@ def ensure_version_columns(connection: sqlite3.Connection) -> None:
         connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_before REAL DEFAULT 0")
     if "ats_score_after" not in columns:
         connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_after REAL DEFAULT 0")
+    if "preserved_docx_blob" not in columns:
+        connection.execute("ALTER TABLE resume_versions ADD COLUMN preserved_docx_blob BLOB")
+    resume_columns = {row[1] for row in connection.execute("PRAGMA table_info(resumes)").fetchall()}
+    if "original_file" not in resume_columns:
+        connection.execute("ALTER TABLE resumes ADD COLUMN original_file BLOB")
 
 
 def row_to_version(row: sqlite3.Row | tuple) -> ResumeVersion:
@@ -284,12 +290,17 @@ def export_version(
         row = connection.execute(
             """
             SELECT version_id, base_resume_id, user_id, version_number, job_id, company_name, role,
-                   accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after
+                   accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after,
+                   preserved_docx_blob
             FROM resume_versions
             WHERE version_id = ? AND user_id = ?
             """,
             (version_id, user_id),
         ).fetchone()
+        resume_row = connection.execute(
+            "SELECT file_name, file_type, original_file FROM resumes WHERE id = ? AND user_id = ?",
+            (row[1], user_id),
+        ).fetchone() if row else None
     finally:
         connection.close()
 
@@ -297,6 +308,27 @@ def export_version(
         raise HTTPException(status_code=404, detail="Version not found.")
 
     version = row_to_version(row)
+
+    if resume_row and resume_row[1] == "docx" and row[13]:
+        if format == "docx":
+            buffer = io.BytesIO(row[13])
+            buffer.seek(0)
+            file_stem = Path(resume_row[0] or f"resume-{version.metadata.version_number}").stem
+            return StreamingResponse(
+                buffer,
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers={"Content-Disposition": f'attachment; filename="{file_stem}-v{version.metadata.version_number}.docx"'},
+            )
+        raise HTTPException(
+            status_code=400,
+            detail="Exact-format PDF export is not available yet. Download DOCX to preserve the original layout and fonts.",
+        )
+
+    if resume_row and resume_row[1] == "pdf":
+        raise HTTPException(
+            status_code=400,
+            detail="Exact format-preserving export is only supported for DOCX source resumes. PDF uploads cannot be safely rewritten while keeping the original typography and layout.",
+        )
 
     if format == "pdf":
         buffer = io.BytesIO()

@@ -61,6 +61,7 @@ export default function ExportModal({ version, initialFormat = "pdf", onClose })
   const [format, setFormat] = useState(initialFormat);
   const [template, setTemplate] = useState("modern");
   const [state, setState] = useState("idle");
+  const [error, setError] = useState("");
   const previewResume = useMemo(() => version?.resume_json || { contact: {}, skills: [], experience: [] }, [version]);
 
   useEffect(() => {
@@ -70,10 +71,13 @@ export default function ExportModal({ version, initialFormat = "pdf", onClose })
   async function handleDownload() {
     if (!version) return;
     setState("loading");
+    setError("");
     const response = await apiFetch(`/api/versions/${version.version_id}/export?format=${format}&template=${template}`, {
       method: "POST"
     });
     if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      setError(payload.detail || "Export failed.");
       setState("error");
       return;
     }
@@ -148,6 +152,7 @@ export default function ExportModal({ version, initialFormat = "pdf", onClose })
             >
               {state === "loading" ? "Preparing..." : `Download ${format.toUpperCase()}`}
             </button>
+            {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
           </section>
 
           <section className="rounded-[2rem] bg-stone-50 p-5">

@@ -188,14 +188,14 @@ export default function DiffEditorPage() {
               <button
                 type="button"
                 onClick={() => setAllDecisions("accepted")}
-                className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
+                className="theme-secondary-button rounded-full px-4 py-3 text-sm font-semibold transition"
               >
                 Accept All
               </button>
               <button
                 type="button"
                 onClick={() => setAllDecisions("rejected")}
-                className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
+                className="theme-secondary-button rounded-full px-4 py-3 text-sm font-semibold transition"
               >
                 Reject All
               </button>
@@ -203,7 +203,7 @@ export default function DiffEditorPage() {
                 type="button"
                 onClick={handleApply}
                 disabled={!acceptedIds.length || applyState === "loading"}
-                className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#01575c] disabled:cursor-not-allowed disabled:opacity-60"
+                className="theme-primary-button rounded-full px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {applyState === "loading" ? "Applying..." : "Apply Accepted Changes"}
               </button>
@@ -234,11 +234,13 @@ export default function DiffEditorPage() {
           ))}
 
           {!sortedSuggestions.length && suggestionState !== "loading" ? (
-            <EmptyState
-              art="check"
-              title="Your resume already matches this job well!"
-              description="The AI suggester did not find any high-confidence rewrites to propose for the current resume and job pair."
-            />
+            <div className="pt-8">
+              <EmptyState
+                art="check"
+                title="Your resume already matches this job well!"
+                description="The AI suggester did not find any high-confidence rewrites to propose for the current resume and job pair."
+              />
+            </div>
           ) : null}
         </section>
       </div>

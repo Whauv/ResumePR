@@ -170,7 +170,7 @@ export default function JobInputPage() {
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
                     className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      activeTab === tab.id ? "bg-accent text-white" : "bg-white text-stone-600"
+                      activeTab === tab.id ? "theme-pill-active" : "theme-pill"
                     }`}
                   >
                     {tab.label}
@@ -184,13 +184,13 @@ export default function JobInputPage() {
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
                     placeholder="Paste a job posting URL"
-                    className="w-full rounded-[1.4rem] border border-stone-200 bg-white/80 px-4 py-3 text-sm outline-none transition focus:border-accent focus:bg-white"
+                    className="theme-input w-full rounded-[1.4rem] px-4 py-3 text-sm outline-none transition"
                   />
                   <button
                     type="button"
                     onClick={() => handleAnalyze({ url })}
                     disabled={jobState === "loading"}
-                    className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#01575c] disabled:opacity-70"
+                    className="theme-primary-button rounded-full px-5 py-3 text-sm font-semibold transition disabled:opacity-70"
                   >
                     {jobState === "loading" ? "Analyzing..." : "Analyze URL"}
                   </button>
@@ -204,13 +204,13 @@ export default function JobInputPage() {
                     onChange={(event) => setRawText(event.target.value)}
                     rows={12}
                     placeholder="Paste the full job description text"
-                    className="w-full rounded-[1.7rem] border border-stone-200 bg-white/80 px-4 py-4 text-sm outline-none transition focus:border-accent focus:bg-white"
+                    className="theme-input w-full rounded-[1.7rem] px-4 py-4 text-sm outline-none transition"
                   />
                   <button
                     type="button"
                     onClick={() => handleAnalyze({ raw_text: rawText })}
                     disabled={jobState === "loading"}
-                    className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#01575c] disabled:opacity-70"
+                    className="theme-primary-button rounded-full px-5 py-3 text-sm font-semibold transition disabled:opacity-70"
                   >
                     {jobState === "loading" ? "Analyzing..." : "Analyze Text"}
                   </button>
@@ -219,7 +219,7 @@ export default function JobInputPage() {
 
               {activeTab === "extension" ? (
                 <div className="mt-4 space-y-4">
-                  <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                  <div className="theme-soft-panel rounded-2xl p-4">
                     <p className="text-sm font-semibold text-stone-900">Extension status</p>
                     <p className="mt-2 text-sm text-stone-600">
                       {extensionStatus === "checking" && "Checking for a recently synced job description..."}
@@ -231,7 +231,7 @@ export default function JobInputPage() {
                     type="button"
                     onClick={handleLoadFromExtension}
                     disabled={jobState === "loading" || extensionStatus !== "ready"}
-                    className="rounded-full bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:opacity-70"
+                    className="theme-secondary-button rounded-full px-5 py-3 text-sm font-semibold transition disabled:opacity-70"
                   >
                     {jobState === "loading" ? "Loading..." : "Load"}
                   </button>
@@ -243,7 +243,7 @@ export default function JobInputPage() {
 
             <CollapsibleCard title="Run Analysis" subtitle="Generate the differentiating per-section gap breakdown.">
               <div className="space-y-4">
-                <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">
+                <div className="theme-soft-panel rounded-2xl p-4 text-sm">
                   Resume ready: <strong>{metadata?.resumeId ? "Yes" : "No"}</strong>
                   <br />
                   Job ready: <strong>{parsedJob?.job_id ? "Yes" : "No"}</strong>
@@ -252,7 +252,7 @@ export default function JobInputPage() {
                   type="button"
                   onClick={handleRunGapAnalysis}
                   disabled={analysisState === "loading"}
-                  className="rounded-full bg-emerald-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-70"
+                  className="theme-primary-button rounded-full px-5 py-3 text-sm font-semibold transition disabled:opacity-70"
                 >
                   {analysisState === "loading" ? "Running analysis..." : "Run Skills Gap Analysis"}
                 </button>

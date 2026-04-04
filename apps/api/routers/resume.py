@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import io
 import sqlite3
 from datetime import datetime, UTC
 from pathlib import Path
 from uuid import uuid4
 
+from docx import Document
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from models.schemas import (
@@ -37,6 +39,7 @@ def get_connection() -> sqlite3.Connection:
             user_id TEXT NOT NULL DEFAULT '',
             file_name TEXT NOT NULL,
             file_type TEXT NOT NULL,
+            original_file BLOB,
             parsed_json TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
@@ -54,6 +57,7 @@ def get_connection() -> sqlite3.Connection:
             role TEXT,
             accepted_count INTEGER NOT NULL,
             rejected_count INTEGER NOT NULL,
+            preserved_docx_blob BLOB,
             resume_json TEXT NOT NULL,
             created_at TEXT NOT NULL
         )
@@ -64,9 +68,13 @@ def get_connection() -> sqlite3.Connection:
         connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_before REAL DEFAULT 0")
     if "ats_score_after" not in columns:
         connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_after REAL DEFAULT 0")
+    if "preserved_docx_blob" not in columns:
+        connection.execute("ALTER TABLE resume_versions ADD COLUMN preserved_docx_blob BLOB")
     resume_columns = {row[1] for row in connection.execute("PRAGMA table_info(resumes)").fetchall()}
     if "user_id" not in resume_columns:
         connection.execute("ALTER TABLE resumes ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
+    if "original_file" not in resume_columns:
+        connection.execute("ALTER TABLE resumes ADD COLUMN original_file BLOB")
     if "user_id" not in columns:
         connection.execute("ALTER TABLE resume_versions ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
     connection.execute(
@@ -109,6 +117,60 @@ def get_connection() -> sqlite3.Connection:
         if "user_id" not in table_columns:
             connection.execute(f"ALTER TABLE {table_name} ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
     return connection
+
+
+def normalize_text(value: str) -> str:
+    return " ".join(value.split()).strip().lower()
+
+
+def replace_paragraph_text(paragraph, new_text: str) -> None:
+    if paragraph.runs:
+        paragraph.runs[0].text = new_text
+        for run in paragraph.runs[1:]:
+            run.text = ""
+    else:
+        paragraph.add_run(new_text)
+
+
+def iter_doc_paragraphs(document: Document):
+    for paragraph in document.paragraphs:
+        yield paragraph
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    yield paragraph
+
+
+def preserve_docx_format_with_edits(file_bytes: bytes, suggestions: list[EditSuggestion]) -> bytes:
+    document = Document(io.BytesIO(file_bytes))
+    paragraphs = list(iter_doc_paragraphs(document))
+    paragraph_map = {normalize_text(paragraph.text): paragraph for paragraph in paragraphs if paragraph.text.strip()}
+
+    for suggestion in suggestions:
+        original = normalize_text(suggestion.original_text)
+        if not original:
+            continue
+
+        paragraph = paragraph_map.get(original)
+        if paragraph:
+            replace_paragraph_text(paragraph, suggestion.suggested_text)
+            paragraph_map[normalize_text(suggestion.suggested_text)] = paragraph
+            continue
+
+        for paragraph in paragraphs:
+            text = paragraph.text or ""
+            normalized_text = normalize_text(text)
+            if original and original in normalized_text:
+                updated_text = text.replace(suggestion.original_text, suggestion.suggested_text)
+                if updated_text == text and suggestion.original_text.strip() != text.strip():
+                    continue
+                replace_paragraph_text(paragraph, updated_text)
+                break
+
+    buffer = io.BytesIO()
+    document.save(buffer)
+    return buffer.getvalue()
 
 
 def apply_suggestion_to_resume(resume_data: dict, suggestion: EditSuggestion) -> None:
@@ -180,8 +242,8 @@ async def upload_resume(request: Request, file: UploadFile = File(...)) -> Resum
     connection = get_connection()
     try:
         connection.execute(
-            "INSERT INTO resumes (id, user_id, file_name, file_type, parsed_json) VALUES (?, ?, ?, ?, ?)",
-            (resume_id, user_id, file.filename or "resume", file_type, json.dumps(parsed_resume.model_dump())),
+            "INSERT INTO resumes (id, user_id, file_name, file_type, original_file, parsed_json) VALUES (?, ?, ?, ?, ?, ?)",
+            (resume_id, user_id, file.filename or "resume", file_type, file_bytes, json.dumps(parsed_resume.model_dump())),
         )
         connection.commit()
     finally:
@@ -204,7 +266,7 @@ def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEdits
     connection = get_connection()
     try:
         resume_row = connection.execute(
-            "SELECT parsed_json FROM resumes WHERE id = ? AND user_id = ?",
+            "SELECT parsed_json, file_type, original_file FROM resumes WHERE id = ? AND user_id = ?",
             (request.resume_id, user_id),
         ).fetchone()
         if not resume_row:
@@ -245,9 +307,18 @@ def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEdits
         connection.close()
 
     resume_data = json.loads(resume_row[0])
+    source_file_type = (resume_row[1] or "").lower()
+    original_file_bytes = resume_row[2]
     suggestions = [EditSuggestion.model_validate(json.loads(row[3])) for row in suggestion_rows]
     for suggestion in suggestions:
         apply_suggestion_to_resume(resume_data, suggestion)
+
+    preserved_docx_blob = None
+    if source_file_type == "docx" and original_file_bytes:
+        try:
+            preserved_docx_blob = preserve_docx_format_with_edits(original_file_bytes, suggestions)
+        except Exception:
+            preserved_docx_blob = None
 
     updated_resume = ParsedResume.model_validate(resume_data)
     version_id = str(uuid4())
@@ -278,7 +349,8 @@ def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEdits
             INSERT INTO resume_versions (
                 version_id, base_resume_id, user_id, version_number, job_id, company_name, role,
                 accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                , preserved_docx_blob
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 version_id,
@@ -294,6 +366,7 @@ def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEdits
                 created_at,
                 gap_before.overall_score,
                 gap_after.overall_score,
+                preserved_docx_blob,
             ),
         )
         connection.commit()
