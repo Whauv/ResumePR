@@ -170,9 +170,9 @@ export default function DiffEditorPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#eef2f2_100%)] px-4 pb-32 pt-8 text-stone-900">
+    <main className="min-h-screen px-4 pb-32 pt-8 text-stone-900">
       <div className="mx-auto max-w-7xl">
-        <header className="sticky top-20 z-10 rounded-[2rem] border border-stone-200 bg-white/90 p-6 shadow-panel backdrop-blur">
+        <header className="page-hero sticky top-24 z-10 rounded-[2rem] p-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">AI Diff Review</p>
@@ -237,13 +237,13 @@ export default function DiffEditorPage() {
             <EmptyState
               art="check"
               title="Your resume already matches this job well!"
-              description="Gemini did not find any high-confidence rewrites to propose for the current resume and job pair."
+              description="The AI suggester did not find any high-confidence rewrites to propose for the current resume and job pair."
             />
           ) : null}
         </section>
       </div>
 
-      <aside className="fixed bottom-4 left-1/2 z-20 w-[min(1100px,calc(100vw-2rem))] -translate-x-1/2 rounded-[2rem] border border-stone-200 bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.16)] backdrop-blur">
+      <aside className="fixed bottom-4 left-1/2 z-20 w-[min(1100px,calc(100vw-2rem))] -translate-x-1/2 rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Summary Bar</p>

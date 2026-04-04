@@ -92,7 +92,7 @@ function ChipList({ items, tone }) {
 
 function SectionCard({ title, report, onFix }) {
   return (
-    <article className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-panel">
+    <article className="glass-card rounded-[2rem] p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-stone-950">{title}</h3>
@@ -128,7 +128,7 @@ function SectionCard({ title, report, onFix }) {
 export default function GapAnalysisPanel({ report, analysisState, analysisError, onAnalyze, onFixSection }) {
   if (!report) {
     return (
-      <section className="rounded-[2rem] border border-dashed border-stone-300 bg-white/90 p-8 shadow-panel">
+      <section className="glass-card rounded-[2rem] border border-dashed border-stone-300/70 p-8">
         <h2 className="text-2xl font-semibold text-stone-950">Skills Gap Analysis</h2>
         {analysisState === "loading" ? (
           <div className="mt-5 space-y-4">
@@ -158,7 +158,7 @@ export default function GapAnalysisPanel({ report, analysisState, analysisError,
 
   return (
     <section className="space-y-6">
-      <article className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-panel">
+      <article className="glass-card rounded-[2rem] p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-400">Gap Analysis</p>
         <div className="mt-5">
           <ProgressRing value={report.overall_score} />
@@ -170,7 +170,7 @@ export default function GapAnalysisPanel({ report, analysisState, analysisError,
       <SectionCard title="Experience" report={report.sections.experience} onFix={() => onFixSection("experience")} />
       <SectionCard title="Summary" report={report.sections.summary} onFix={() => onFixSection("summary")} />
 
-      <article className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-panel">
+      <article className="glass-card rounded-[2rem] p-5">
         <h3 className="text-lg font-semibold text-stone-950">Top 10 Missing Keywords</h3>
         <div className="mt-4 flex flex-wrap gap-2">
           {report.top_missing_keywords.length ? (
@@ -188,7 +188,7 @@ export default function GapAnalysisPanel({ report, analysisState, analysisError,
         </div>
       </article>
 
-      <article className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-panel">
+      <article className="glass-card rounded-[2rem] p-5">
         <h3 className="text-lg font-semibold text-stone-950">ATS Red Flags</h3>
         <div className="mt-4 space-y-3">
           {report.ats_red_flags.length ? (

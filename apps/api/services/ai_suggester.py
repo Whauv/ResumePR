@@ -5,6 +5,7 @@ import os
 from typing import Any
 from uuid import uuid4
 
+import httpx
 from pydantic import BaseModel, ValidationError
 
 from models.schemas import EditSuggestion
@@ -31,7 +32,9 @@ Rules:
 - Preserve the candidate's actual experience - do not fabricate achievements
 - Focus on: adding missing keywords naturally, quantifying achievements, using stronger action verbs
 - For each suggestion, explain WHY in one sentence
-- Return JSON array of EditSuggestion objects ONLY, no prose
+- Return a JSON object with one key: "suggestions"
+- The "suggestions" value must be an array of EditSuggestion objects
+- Return JSON ONLY, no prose or markdown fences
 
 EditSuggestion schema:
 {{
@@ -52,6 +55,9 @@ Missing Keywords to Address: {json.dumps(top_missing_keywords, ensure_ascii=True
 
 
 def parse_suggestions(raw_text: str) -> list[EditSuggestion]:
+    if raw_text.startswith("```"):
+        raw_text = raw_text.strip()
+        raw_text = raw_text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     payload = json.loads(raw_text)
     if isinstance(payload, dict) and "suggestions" in payload:
         parsed = SuggestionEnvelope.model_validate(payload).suggestions
@@ -65,29 +71,67 @@ def parse_suggestions(raw_text: str) -> list[EditSuggestion]:
     return sorted(suggestions, key=lambda suggestion: suggestion.confidence, reverse=True)
 
 
-def generate_suggestions(resume_json: dict[str, Any], job_json: dict[str, Any], gap_report: dict[str, Any]) -> list[EditSuggestion]:
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not set.")
+def generate_with_groq(api_key: str, prompt: str) -> list[EditSuggestion]:
+    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    response = httpx.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": model,
+            "temperature": 0.2,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You rewrite resumes conservatively and return strict JSON only.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+        },
+        timeout=60.0,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    raw_text = payload["choices"][0]["message"]["content"]
+    return parse_suggestions(raw_text)
+
+
+def generate_with_gemini(api_key: str, prompt: str) -> list[EditSuggestion]:
     if genai is None:
         raise RuntimeError("google-genai is not installed.")
-
-    prompt = build_prompt(resume_json, job_json, gap_report)
     client = genai.Client(api_key=api_key)
-
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-            config={
-                "response_mime_type": "application/json",
-            },
-        )
-    except Exception as exc:  # pragma: no cover
-        raise RuntimeError(f"Gemini suggestion generation failed: {exc}") from exc
-
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
+        config={
+            "response_mime_type": "application/json",
+        },
+    )
     raw_text = getattr(response, "text", "") or ""
-    try:
-        return parse_suggestions(raw_text)
-    except (json.JSONDecodeError, ValidationError) as exc:
-        raise RuntimeError("Gemini returned invalid suggestion JSON.") from exc
+    return parse_suggestions(raw_text)
+
+
+def generate_suggestions(resume_json: dict[str, Any], job_json: dict[str, Any], gap_report: dict[str, Any]) -> list[EditSuggestion]:
+    prompt = build_prompt(resume_json, job_json, gap_report)
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    errors: list[str] = []
+
+    if groq_api_key:
+        try:
+            return generate_with_groq(groq_api_key, prompt)
+        except (httpx.HTTPError, json.JSONDecodeError, ValidationError, KeyError) as exc:
+            errors.append(f"Groq failed: {exc}")
+
+    if gemini_api_key:
+        try:
+            return generate_with_gemini(gemini_api_key, prompt)
+        except (json.JSONDecodeError, ValidationError, RuntimeError, KeyError) as exc:
+            errors.append(f"Gemini failed: {exc}")
+
+    if not groq_api_key and not gemini_api_key:
+        raise RuntimeError("Neither GROQ_API_KEY nor GEMINI_API_KEY is set.")
+    raise RuntimeError("Suggestion generation failed. " + " | ".join(errors))

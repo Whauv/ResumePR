@@ -51,13 +51,13 @@ export default function JobSummaryPanel({ parsedJob }) {
       <CollapsibleCard title="Requirements" defaultOpen={false}>
         {parsedJob ? (
           <div className="space-y-4">
-            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+            <div className="rounded-[1.5rem] border border-stone-200/80 bg-white/70 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-400">Experience</p>
               <p className="mt-2 text-sm text-stone-700">
                 {parsedJob.experience_years ? `${parsedJob.experience_years}+ years` : "Not explicitly detected"}
               </p>
             </div>
-            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+            <div className="rounded-[1.5rem] border border-stone-200/80 bg-white/70 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-400">Education</p>
               <p className="mt-2 text-sm text-stone-700">
                 {parsedJob.education_requirement || "No formal education requirement detected"}
@@ -71,7 +71,7 @@ export default function JobSummaryPanel({ parsedJob }) {
 
       <CollapsibleCard title="Job Description" defaultOpen={false}>
         {parsedJob ? (
-          <div className="max-h-72 overflow-auto rounded-3xl border border-stone-200 bg-white p-4 text-sm leading-7 text-stone-700">
+          <div className="max-h-72 overflow-auto rounded-[1.7rem] border border-stone-200/80 bg-white/82 p-4 text-sm leading-7 text-stone-700">
             {parsedJob.raw_text}
           </div>
         ) : (

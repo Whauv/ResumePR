@@ -101,13 +101,13 @@ export default function DiffCard({ suggestion, index, decision, label, onAccept,
     <article
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className={`rounded-[2rem] border bg-white p-6 shadow-panel outline-none transition duration-300 ease-out animate-[fade-up_420ms_ease_forwards] ${
-        accepted ? "border-transparent ring-2 ring-accent/40 shadow-[0_22px_55px_rgba(1,105,111,0.18)]" : "border-stone-200"
+      className={`glass-card rounded-[2rem] p-6 outline-none transition duration-300 ease-out animate-[fade-up_420ms_ease_forwards] ${
+        accepted ? "ring-2 ring-accent/40 shadow-[0_22px_55px_rgba(1,105,111,0.18)]" : ""
       } ${rejected ? "opacity-50" : ""}`}
       style={{ animationDelay: `calc(${index} * 60ms)` }}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">
+        <span className="rounded-full border border-stone-200/80 bg-stone-100/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-stone-600">
           {label}
         </span>
         <span className="rounded-full border border-stone-200 px-3 py-1 text-xs font-semibold text-stone-600">

@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -8,6 +11,8 @@ from routers.jobs import router as jobs_router
 from routers.resume import router as resume_router
 from routers.versions import router as versions_router
 from services.auth import verify_bearer_token
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 app = FastAPI(title="ResumePR API", version="0.1.0")
 

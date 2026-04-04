@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import EmptyState from "../components/EmptyState";
-import CollapsibleCard from "../components/CollapsibleCard";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
 import SkeletonBlock from "../components/SkeletonBlock";
 import { apiFetch } from "../lib/api";
@@ -80,10 +79,10 @@ export default function UploadPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(1,105,111,0.12),_transparent_38%),linear-gradient(180deg,_#f8fafc_0%,_#eef2f2_100%)] px-4 py-12 text-stone-900">
+    <main className="min-h-screen px-4 py-12 text-stone-900">
       <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         <section className="space-y-6">
-          <div className="space-y-3">
+          <div className="page-hero rounded-[2.4rem] p-8 space-y-3">
             <span className="inline-flex rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
               Resume Parser
             </span>
@@ -97,8 +96,8 @@ export default function UploadPage() {
           </div>
 
           <div
-            className={`rounded-[2rem] border-2 border-dashed bg-white/90 p-8 shadow-panel transition ${
-              isDragging ? "border-accent bg-accent/5" : "border-stone-300"
+            className={`glass-card rounded-[2rem] border-2 border-dashed p-8 transition ${
+              isDragging ? "border-accent bg-accent/5" : "border-stone-300/70"
             }`}
             onDragOver={(event) => {
               event.preventDefault();
@@ -112,7 +111,7 @@ export default function UploadPage() {
             }}
           >
             <div className="space-y-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-900 text-sm font-semibold text-white">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-stone-900 text-sm font-semibold text-white shadow-lg">
                 {badge?.icon || "CV"}
               </div>
               <div>
