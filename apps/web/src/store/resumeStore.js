@@ -30,6 +30,7 @@ export const useResumeStore = create((set) => ({
       versions: [
         {
           version_id: payload.version_id,
+          base_resume_id: state.metadata?.resumeId || "",
           metadata: payload.metadata,
           resume_json: payload.updated_resume
         },

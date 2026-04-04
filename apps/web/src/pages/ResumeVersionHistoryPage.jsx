@@ -46,7 +46,7 @@ function CompareModal({ diff, onClose }) {
       <div className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-[2rem] border border-stone-200 bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.25)]">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Compare Versions</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Version Changes</p>
             <h2 className="mt-2 text-2xl font-semibold text-stone-950">Exact changes from the previous version</h2>
           </div>
           <button type="button" onClick={onClose} className="rounded-full bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-700">
@@ -82,6 +82,39 @@ function CompareModal({ diff, onClose }) {
   );
 }
 
+function ResumeViewModal({ version, onClose }) {
+  if (!version) return null;
+
+  return (
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-stone-950/40 p-4 backdrop-blur-sm">
+      <div className="max-h-[92vh] w-full max-w-5xl overflow-auto rounded-[2rem] border border-stone-200 bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.25)]">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Version Preview</p>
+            <h2 className="mt-2 text-2xl font-semibold text-stone-950">
+              v{version.metadata.version_number} - {version.metadata.company_name || version.metadata.role || "Resume"}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-700">
+            Close
+          </button>
+        </div>
+
+        <div className="mt-6">
+          <ResumePreviewPanel
+            parsedResume={version.resume_json}
+            metadata={{
+              resumeId: version.base_resume_id,
+              fileName: `Version ${version.metadata.version_number}`,
+              fileType: "version"
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ResumeVersionHistoryPage() {
   const { metadata, parsedResume, versions, versionSummaries, setVersions, setVersionSummaries, restoreVersion } = useResumeStore();
   const { latestVersionId, setActivePage, setLatestVersionId } = useAppStore();
@@ -89,6 +122,7 @@ export default function ResumeVersionHistoryPage() {
   const [error, setError] = useState("");
   const [diffState, setDiffState] = useState("idle");
   const [diffData, setDiffData] = useState(null);
+  const [viewVersionId, setViewVersionId] = useState("");
   const [exportVersionId, setExportVersionId] = useState("");
   const [exportFormat, setExportFormat] = useState("pdf");
 
@@ -127,10 +161,12 @@ export default function ResumeVersionHistoryPage() {
     [versions]
   );
   const exportVersion = exportVersionId ? fullVersionMap.get(exportVersionId) : null;
+  const viewedVersion = viewVersionId ? fullVersionMap.get(viewVersionId) : null;
 
   async function handleCompare(versionId) {
     try {
       setDiffState("loading");
+      setError("");
       const payload = await fetchVersionDiff(versionId);
       setDiffData(payload);
       setDiffState("success");
@@ -158,7 +194,7 @@ export default function ResumeVersionHistoryPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Resume Version History</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-stone-950">Timeline of tailored resumes</h1>
             <p className="mt-2 text-sm text-stone-500">
-              Compare versions, restore a prior draft, or export any tailored resume to PDF or DOCX.
+              Open a saved version, inspect what changed, restore an older draft, or export a version.
             </p>
             <button
               type="button"
@@ -223,20 +259,17 @@ export default function ResumeVersionHistoryPage() {
                     <div className="mt-5 flex flex-wrap gap-3">
                       <button
                         type="button"
-                        onClick={() => {
-                          setLatestVersionId(version.version_id);
-                          restoreVersion(version.version_id);
-                        }}
+                        onClick={() => setViewVersionId(version.version_id)}
                         className="rounded-full bg-stone-900 px-4 py-3 text-sm font-semibold text-white"
                       >
-                        View
+                        View Resume
                       </button>
                       <button
                         type="button"
                         onClick={() => handleCompare(version.version_id)}
-                        className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-stone-700 border border-stone-200"
+                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700"
                       >
-                        Compare
+                        View Changes
                       </button>
                       <button
                         type="button"
@@ -244,7 +277,7 @@ export default function ResumeVersionHistoryPage() {
                           setExportFormat("pdf");
                           setExportVersionId(version.version_id);
                         }}
-                        className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-stone-700 border border-stone-200"
+                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700"
                       >
                         Export PDF
                       </button>
@@ -254,7 +287,7 @@ export default function ResumeVersionHistoryPage() {
                           setExportFormat("docx");
                           setExportVersionId(version.version_id);
                         }}
-                        className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-stone-700 border border-stone-200"
+                        className="rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700"
                       >
                         Export DOCX
                       </button>
@@ -288,6 +321,7 @@ export default function ResumeVersionHistoryPage() {
         </div>
       ) : null}
 
+      <ResumeViewModal version={viewedVersion} onClose={() => setViewVersionId("")} />
       <CompareModal diff={diffData} onClose={() => setDiffData(null)} />
       <ExportModal version={exportVersion} initialFormat={exportFormat} onClose={() => setExportVersionId("")} />
     </main>
