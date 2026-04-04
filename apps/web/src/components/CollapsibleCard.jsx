@@ -4,7 +4,7 @@ export default function CollapsibleCard({ title, subtitle, defaultOpen = true, c
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-panel">
+    <section className="glass-card overflow-hidden rounded-[2rem]">
       <button
         type="button"
         onClick={() => setIsOpen((value) => !value)}
@@ -14,9 +14,11 @@ export default function CollapsibleCard({ title, subtitle, defaultOpen = true, c
           <h2 className="text-lg font-semibold text-stone-900">{title}</h2>
           {subtitle ? <p className="mt-1 text-sm text-stone-500">{subtitle}</p> : null}
         </div>
-        <span className="text-sm font-medium text-accent">{isOpen ? "Hide" : "Show"}</span>
+        <span className="rounded-full border border-accent/15 bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+          {isOpen ? "Hide" : "Show"}
+        </span>
       </button>
-      {isOpen ? <div className="border-t border-stone-100 px-6 py-5">{children}</div> : null}
+      {isOpen ? <div className="border-t border-white/60 px-6 py-5">{children}</div> : null}
     </section>
   );
 }

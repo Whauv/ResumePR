@@ -1,8 +1,8 @@
 export default function EmptyState({ title, description, art = "arrow" }) {
-  const glyph = art === "compass" ? "N" : art === "check" ? "OK" : "^";
+  const glyph = art === "compass" ? "N" : art === "check" ? "OK" : "->";
   return (
-    <div className="rounded-[2rem] border border-dashed border-stone-300 bg-white p-8 text-center shadow-panel">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent/10 text-2xl font-bold text-accent">
+    <div className="glass-card rounded-[2rem] border border-dashed border-stone-300/70 p-8 text-center">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.4rem] border border-accent/15 bg-accent/10 text-xl font-bold text-accent shadow-[0_16px_32px_rgba(1,105,111,0.12)]">
         {glyph}
       </div>
       <h3 className="mt-4 text-xl font-semibold text-stone-950">{title}</h3>

@@ -145,10 +145,10 @@ export default function JobInputPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_rgba(1,105,111,0.12),_transparent_35%),linear-gradient(180deg,_#f8fafc_0%,_#eef2f2_100%)] px-4 py-12 text-stone-900">
+    <main className="min-h-screen px-4 py-12 text-stone-900">
       <div className="mx-auto max-w-7xl space-y-8">
         <section className="space-y-6">
-          <div className="space-y-3">
+          <div className="page-hero rounded-[2.4rem] p-8 space-y-3">
             <span className="inline-flex rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
               Job Description Intake
             </span>
@@ -184,7 +184,7 @@ export default function JobInputPage() {
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
                     placeholder="Paste a job posting URL"
-                    className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-accent focus:bg-white"
+                    className="w-full rounded-[1.4rem] border border-stone-200 bg-white/80 px-4 py-3 text-sm outline-none transition focus:border-accent focus:bg-white"
                   />
                   <button
                     type="button"
@@ -204,7 +204,7 @@ export default function JobInputPage() {
                     onChange={(event) => setRawText(event.target.value)}
                     rows={12}
                     placeholder="Paste the full job description text"
-                    className="w-full rounded-3xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm outline-none transition focus:border-accent focus:bg-white"
+                    className="w-full rounded-[1.7rem] border border-stone-200 bg-white/80 px-4 py-4 text-sm outline-none transition focus:border-accent focus:bg-white"
                   />
                   <button
                     type="button"

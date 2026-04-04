@@ -140,6 +140,8 @@ npm run dev:api
 ### Shared
 
 - `GEMINI_API_KEY`
+- `GROQ_API_KEY`
+- `GROQ_MODEL`
 - `FIREBASE_SERVICE_ACCOUNT_JSON`
 - `PORT`
 - `VITE_API_URL`
@@ -147,6 +149,8 @@ npm run dev:api
 
 ### API
 
+- `GROQ_API_KEY`
+- `GROQ_MODEL`
 - `GEMINI_API_KEY`
 - `FIREBASE_SERVICE_ACCOUNT_JSON`
 - `PORT`
@@ -168,11 +172,14 @@ npm run dev:api
 6. Generate a service account key.
 7. Put the full JSON into `FIREBASE_SERVICE_ACCOUNT_JSON`.
 
-## Gemini Setup
+## LLM Setup
 
-1. Open Google AI Studio.
-2. Create a Gemini API key on the free tier.
-3. Set it as `GEMINI_API_KEY`.
+ResumePR prefers Groq for AI suggestions and falls back to Gemini if Groq is unavailable.
+
+1. Create a Groq API key and set it as `GROQ_API_KEY`.
+2. Optionally set `GROQ_MODEL` or keep the default `llama-3.3-70b-versatile`.
+3. Create a Gemini API key in Google AI Studio if you want a backup provider.
+4. Set the backup key as `GEMINI_API_KEY`.
 
 ## Deployment
 
@@ -197,6 +204,8 @@ Use:
 
 Set:
 
+- `GROQ_API_KEY`
+- `GROQ_MODEL`
 - `GEMINI_API_KEY`
 - `FIREBASE_SERVICE_ACCOUNT_JSON`
 
@@ -222,4 +231,3 @@ apps/web ---------------------------> apps/api -------------------------> SQLite
 - PR-style accept/reject AI diff editor for bullet rewrites
 - Resume version history with compare, restore, and export
 - Firebase-authenticated, user-scoped data model
-

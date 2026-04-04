@@ -5,8 +5,12 @@ export default {
       colors: {
         accent: "#01696f"
       },
+      fontFamily: {
+        sans: ["Manrope", "Segoe UI", "sans-serif"],
+        display: ["Fraunces", "Georgia", "serif"]
+      },
       boxShadow: {
-        panel: "0 18px 48px rgba(15, 23, 42, 0.08)"
+        panel: "0 24px 70px rgba(15, 23, 42, 0.12)"
       }
     }
   },

@@ -150,11 +150,11 @@ export default function ResumeVersionHistoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#eef2f2_100%)] px-4 py-12 text-stone-900">
+    <main className="min-h-screen px-4 py-12 text-stone-900">
       <div className="mx-auto grid max-w-7xl gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <ResumePreviewPanel parsedResume={parsedResume} metadata={metadata} />
         <section className="space-y-5">
-          <div className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-panel">
+          <div className="page-hero rounded-[2rem] p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Resume Version History</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-stone-950">Timeline of tailored resumes</h1>
             <p className="mt-2 text-sm text-stone-500">
@@ -174,7 +174,7 @@ export default function ResumeVersionHistoryPage() {
             <div className="absolute left-[11px] top-0 h-full w-px bg-stone-200" />
             <div className="space-y-5">
               {state === "loading" ? (
-                <div className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-panel">
+                <div className="glass-card rounded-[2rem] p-8">
                   <p className="text-sm text-stone-500">Loading saved versions...</p>
                 </div>
               ) : null}
@@ -185,7 +185,7 @@ export default function ResumeVersionHistoryPage() {
                   <article
                     key={version.version_id}
                     className={`relative rounded-[2rem] border bg-white p-6 shadow-panel ${
-                      version.version_id === latestVersionId ? "border-accent shadow-[0_20px_55px_rgba(1,105,111,0.18)]" : "border-stone-200"
+                      version.version_id === latestVersionId ? "border-accent shadow-[0_20px_55px_rgba(1,105,111,0.18)]" : "border-white/70"
                     }`}
                   >
                     <div className="absolute -left-[22px] top-8 h-4 w-4 rounded-full border-4 border-white bg-accent shadow" />
@@ -271,7 +271,7 @@ export default function ResumeVersionHistoryPage() {
               })}
 
               {!versionSummaries.length && state !== "loading" ? (
-                <div className="rounded-[2rem] border border-dashed border-stone-300 bg-white p-8 shadow-panel">
+                <div className="glass-card rounded-[2rem] border border-dashed border-stone-300/70 p-8">
                   <p className="text-sm leading-7 text-stone-500">
                     No tailored resume versions have been saved yet. Apply accepted edits from the diff editor to create the first one.
                   </p>
