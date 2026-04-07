@@ -108,6 +108,7 @@ uvicorn main:app --reload
 API default URL: `http://127.0.0.1:8000`
 
 The API automatically runs versioned SQLite migrations on startup. To point the app at a different database for testing, set `RESUMEPR_DB_PATH`.
+Every API response now includes an `X-Request-ID` header so frontend errors and server logs can be correlated quickly.
 
 ### 4. Start the web app
 
@@ -139,6 +140,7 @@ The web test suite uses:
 
 - Vitest + Testing Library for component and utility coverage
 - Playwright for browser-level smoke coverage against a deterministic seeded UI mode
+- Page-level tests for upload and job-analysis workflows, in addition to utility and command-palette coverage
 
 Browser smoke tests can be run locally against:
 

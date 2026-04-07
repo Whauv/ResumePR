@@ -29,9 +29,12 @@ def test_health_and_protected_export_flow():
         with TestClient(api_main.app) as client:
             health_response = client.get("/health")
             assert health_response.status_code == 200
+            assert health_response.headers["x-request-id"]
 
             unauthorized = client.get("/api/versions/resume-1")
             assert unauthorized.status_code == 401
+            assert unauthorized.json()["request_id"]
+            assert unauthorized.headers["x-request-id"] == unauthorized.json()["request_id"]
 
             from services.db import get_connection
 
@@ -101,6 +104,7 @@ def test_health_and_protected_export_flow():
             headers = {"Authorization": "Bearer fake-token"}
             versions_response = client.get("/api/versions/resume-1", headers=headers)
             assert versions_response.status_code == 200
+            assert versions_response.headers["x-request-id"]
             payload = versions_response.json()
             assert payload["versions"][0]["version_id"] == "version-1"
 
@@ -109,6 +113,7 @@ def test_health_and_protected_export_flow():
                 headers=headers,
             )
             assert export_response.status_code == 200
+            assert export_response.headers["x-request-id"]
             assert (
                 export_response.headers["content-type"]
                 == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -124,6 +129,50 @@ def test_health_and_protected_export_flow():
             os.environ.pop("CORS_ALLOWED_ORIGINS", None)
         else:
             os.environ["CORS_ALLOWED_ORIGINS"] = previous_origins
+
+        if db_path.exists():
+            db_path.unlink()
+
+
+def test_validation_and_unhandled_errors_include_request_id():
+    previous_db = os.environ.get("RESUMEPR_DB_PATH")
+
+    scratch_dir = Path(__file__).resolve().parents[1]
+    db_path = scratch_dir / f"integration-{uuid4().hex}.db"
+    os.environ["RESUMEPR_DB_PATH"] = str(db_path)
+
+    import main as api_main
+
+    api_main = importlib.reload(api_main)
+    api_main.verify_bearer_token = lambda _token: {"uid": "user-1"}
+
+    @api_main.app.get("/boom")
+    def boom():
+        raise RuntimeError("boom")
+
+    try:
+        with TestClient(api_main.app, raise_server_exceptions=False) as client:
+            headers = {"Authorization": "Bearer fake-token"}
+
+            validation_response = client.post("/api/analysis/gap", headers=headers, json={})
+            assert validation_response.status_code == 422
+            validation_payload = validation_response.json()
+            assert validation_payload["detail"] == "Request validation failed."
+            assert validation_payload["request_id"]
+            assert validation_response.headers["x-request-id"] == validation_payload["request_id"]
+            assert validation_payload["errors"]
+
+            unhandled_response = client.get("/boom", headers=headers)
+            assert unhandled_response.status_code == 500
+            unhandled_payload = unhandled_response.json()
+            assert unhandled_payload["detail"] == "Internal server error."
+            assert unhandled_payload["request_id"]
+            assert unhandled_response.headers["x-request-id"] == unhandled_payload["request_id"]
+    finally:
+        if previous_db is None:
+            os.environ.pop("RESUMEPR_DB_PATH", None)
+        else:
+            os.environ["RESUMEPR_DB_PATH"] = previous_db
 
         if db_path.exists():
             db_path.unlink()

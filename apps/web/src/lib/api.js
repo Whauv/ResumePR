@@ -8,6 +8,7 @@ export class ApiError extends Error {
     this.name = "ApiError";
     this.status = status;
     this.payload = payload;
+    this.requestId = payload?.request_id || "";
   }
 }
 
@@ -47,7 +48,7 @@ async function parseErrorPayload(response) {
 
 export async function apiJson(path, options = {}) {
   const response = await apiFetch(path, options);
-  const payload = await response.json().catch(() => null);
+  const payload = await parseErrorPayload(response);
   if (!response.ok) {
     throw new ApiError(payload?.detail || "Request failed.", response.status, payload);
   }
