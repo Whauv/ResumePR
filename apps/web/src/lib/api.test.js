@@ -30,7 +30,7 @@ describe("api helpers", () => {
 
   it("throws ApiError for failed blob requests", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ detail: "Export failed." }), {
+      new Response(JSON.stringify({ detail: "Export failed.", request_id: "req-123" }), {
         status: 400,
         headers: { "Content-Type": "application/json" }
       })
@@ -41,6 +41,7 @@ describe("api helpers", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(ApiError);
       expect(error).toMatchObject({ message: "Export failed.", status: 400 });
+      expect(error.requestId).toBe("req-123");
     }
   });
 });
