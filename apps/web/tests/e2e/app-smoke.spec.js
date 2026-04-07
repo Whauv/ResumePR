@@ -15,7 +15,7 @@ test("theme toggle works and resume page renders seeded data", async ({ page }) 
 test("command palette and diff editor smoke path render seeded workflow", async ({ page }) => {
   await page.goto("/?e2e=1&page=diff");
 
-  await expect(page.getByText("Targeted resume suggestions")).toBeVisible();
+  await expect(page.getByText("Platform Engineer")).toBeVisible();
   await expect(page.getByText("Docker-ready resume parsing workflows", { exact: false })).toBeVisible();
 
   await page.keyboard.press("Control+K");
