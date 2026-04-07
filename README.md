@@ -57,6 +57,7 @@ Owns:
 - Gemini suggestion generation
 - Version history, restore, and export
 - Firebase token verification and user-scoped data access
+- Versioned SQLite migrations and indexed schema bootstrapping
 
 ### `apps/web`
 
@@ -106,6 +107,8 @@ uvicorn main:app --reload
 
 API default URL: `http://127.0.0.1:8000`
 
+The API automatically runs versioned SQLite migrations on startup. To point the app at a different database for testing, set `RESUMEPR_DB_PATH`.
+
 ### 4. Start the web app
 
 ```bash
@@ -115,6 +118,34 @@ npm run dev
 ```
 
 Web default URL: `http://127.0.0.1:5173`
+
+### 4.5. Run backend checks
+
+```bash
+python -m pytest apps/api/tests -o cache_dir=apps/api/.pytest_cache
+python -m compileall apps/api/main.py apps/api/routers apps/api/services apps/api/tests
+```
+
+### 4.6. Run web tests
+
+```bash
+cd apps/web
+npm install
+npm run test
+npm run test:e2e
+```
+
+The web test suite uses:
+
+- Vitest + Testing Library for component and utility coverage
+- Playwright for browser-level smoke coverage against a deterministic seeded UI mode
+
+Browser smoke tests can be run locally against:
+
+```text
+http://127.0.0.1:4173/?e2e=1&page=resume
+http://127.0.0.1:4173/?e2e=1&page=diff
+```
 
 ### 5. Load the Chrome extension
 
@@ -231,3 +262,8 @@ apps/web ---------------------------> apps/api -------------------------> SQLite
 - PR-style accept/reject AI diff editor for bullet rewrites
 - Resume version history with compare, restore, and export
 - Firebase-authenticated, user-scoped data model
+- Indexed SQLite schema bootstrapping shared across routers
+- Backend regression tests for parsing, scoring, and schema initialization
+- Frontend shared API client helpers with consistent JSON/blob error handling
+- Frontend test harness for component and utility verification
+- Browser-level smoke coverage with Playwright and CI automation via GitHub Actions

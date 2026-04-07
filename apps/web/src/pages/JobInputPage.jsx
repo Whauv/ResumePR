@@ -5,7 +5,8 @@ import GapAnalysisPanel from "../components/GapAnalysisPanel";
 import JobSummaryPanel from "../components/JobSummaryPanel";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
 import SkeletonBlock from "../components/SkeletonBlock";
-import { apiFetch } from "../lib/api";
+import { apiJson } from "../lib/api";
+import { isE2EMode } from "../lib/runtime";
 import { useAnalysisStore } from "../store/analysisStore";
 import { useAppStore } from "../store/appStore";
 import { useJobStore } from "../store/jobStore";
@@ -18,47 +19,31 @@ const tabs = [
 ];
 
 async function parseJob(body) {
-  const response = await apiFetch("/api/jobs/parse", {
+  return apiJson("/api/jobs/parse", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify(body)
   });
-
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.detail || "Failed to analyze job description.");
-  }
-  return payload;
 }
 
 async function fetchLatestExtensionJob() {
-  const response = await apiFetch("/api/jobs/latest/from-extension");
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.detail || "No extension job found yet.");
-  }
-  return payload;
+  return apiJson("/api/jobs/latest/from-extension");
 }
 
 async function runGapAnalysis(resumeId, jobId) {
-  const response = await apiFetch("/api/analysis/gap", {
+  return apiJson("/api/analysis/gap", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ resume_id: resumeId, job_id: jobId })
   });
-
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.detail || "Failed to analyze the resume gap.");
-  }
-  return payload;
 }
 
 export default function JobInputPage() {
+  const e2eMode = isE2EMode();
   const [url, setUrl] = useState("");
   const [rawText, setRawText] = useState("");
   const [extensionStatus, setExtensionStatus] = useState("checking");
@@ -78,6 +63,10 @@ export default function JobInputPage() {
   const { setActivePage, setPhase4TargetSection } = useAppStore();
 
   useEffect(() => {
+    if (e2eMode) {
+      setExtensionStatus("ready");
+      return undefined;
+    }
     let cancelled = false;
 
     async function probeExtensionJob() {
@@ -98,7 +87,7 @@ export default function JobInputPage() {
     return () => {
       cancelled = true;
     };
-  }, [setExtensionJobId]);
+  }, [e2eMode, setExtensionJobId]);
 
   async function handleAnalyze(body) {
     try {

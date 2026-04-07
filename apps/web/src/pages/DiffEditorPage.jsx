@@ -2,32 +2,27 @@ import { useEffect, useMemo, useState } from "react";
 import DiffCard from "../components/DiffCard";
 import EmptyState from "../components/EmptyState";
 import SkeletonBlock from "../components/SkeletonBlock";
-import { apiFetch } from "../lib/api";
+import { apiJson } from "../lib/api";
+import { isE2EMode } from "../lib/runtime";
 import { useAnalysisStore } from "../store/analysisStore";
 import { useAppStore } from "../store/appStore";
 import { useJobStore } from "../store/jobStore";
 import { useResumeStore } from "../store/resumeStore";
 
 async function fetchSuggestions(resumeId, jobId) {
-  const response = await apiFetch("/api/analysis/suggest", {
+  return apiJson("/api/analysis/suggest", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ resume_id: resumeId, job_id: jobId })
   });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.detail || "Failed to generate AI suggestions.");
-  return payload;
 }
 
 async function applyAcceptedEdits(resumeId, acceptedEditIds) {
-  const response = await apiFetch("/api/resume/apply-edits", {
+  return apiJson("/api/resume/apply-edits", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ resume_id: resumeId, accepted_edit_ids: acceptedEditIds })
   });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.detail || "Failed to apply accepted edits.");
-  return payload;
 }
 
 function useCountUp(target) {
@@ -64,6 +59,7 @@ function buildSectionLabel(suggestion, resume) {
 }
 
 export default function DiffEditorPage() {
+  const e2eMode = isE2EMode();
   const { parsedResume, metadata, setUpdatedResumeVersion } = useResumeStore();
   const { parsedJob } = useJobStore();
   const {
@@ -86,6 +82,9 @@ export default function DiffEditorPage() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
+    if (e2eMode) {
+      return undefined;
+    }
     if (!metadata?.resumeId || !parsedJob?.job_id) {
       return;
     }
@@ -114,6 +113,7 @@ export default function DiffEditorPage() {
       cancelled = true;
     };
   }, [
+    e2eMode,
     metadata?.resumeId,
     parsedJob?.job_id,
     setSuggestionError,

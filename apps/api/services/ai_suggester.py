@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from typing import Any
 from uuid import uuid4
 
@@ -18,6 +19,15 @@ except Exception:  # pragma: no cover
 
 class SuggestionEnvelope(BaseModel):
     suggestions: list[EditSuggestion]
+
+
+def _extract_json_blob(raw_text: str) -> str:
+    normalized = raw_text.strip()
+    if normalized.startswith("```"):
+        normalized = normalized.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+
+    match = re.search(r"(\{.*\}|\[.*\])", normalized, flags=re.DOTALL)
+    return match.group(1) if match else normalized
 
 
 def build_prompt(resume_json: dict[str, Any], job_json: dict[str, Any], gap_report: dict[str, Any]) -> str:
@@ -55,10 +65,7 @@ Missing Keywords to Address: {json.dumps(top_missing_keywords, ensure_ascii=True
 
 
 def parse_suggestions(raw_text: str) -> list[EditSuggestion]:
-    if raw_text.startswith("```"):
-        raw_text = raw_text.strip()
-        raw_text = raw_text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-    payload = json.loads(raw_text)
+    payload = json.loads(_extract_json_blob(raw_text))
     if isinstance(payload, dict) and "suggestions" in payload:
         parsed = SuggestionEnvelope.model_validate(payload).suggestions
     else:
@@ -73,26 +80,26 @@ def parse_suggestions(raw_text: str) -> list[EditSuggestion]:
 
 def generate_with_groq(api_key: str, prompt: str) -> list[EditSuggestion]:
     model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-    response = httpx.post(
-        "https://api.groq.com/openai/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "temperature": 0.2,
-            "response_format": {"type": "json_object"},
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You rewrite resumes conservatively and return strict JSON only.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-        },
-        timeout=60.0,
-    )
+    with httpx.Client(timeout=60.0) as client:
+        response = client.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "temperature": 0.2,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You rewrite resumes conservatively and return strict JSON only.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+            },
+        )
     response.raise_for_status()
     payload = response.json()
     raw_text = payload["choices"][0]["message"]["content"]

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "../lib/api";
+import { apiBlob, ApiError, withQuery } from "../lib/api";
 
 const templates = ["modern", "classic", "minimal"];
 
@@ -72,24 +72,22 @@ export default function ExportModal({ version, initialFormat = "pdf", onClose })
     if (!version) return;
     setState("loading");
     setError("");
-    const response = await apiFetch(`/api/versions/${version.version_id}/export?format=${format}&template=${template}`, {
-      method: "POST"
-    });
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      setError(payload.detail || "Export failed.");
+    try {
+      const blob = await apiBlob(
+        withQuery(`/api/versions/${version.version_id}/export`, { format, template }),
+        { method: "POST" }
+      );
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `resume-v${version.metadata.version_number}.${format}`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      setState("success");
+    } catch (downloadError) {
+      setError(downloadError instanceof ApiError ? downloadError.message : "Export failed.");
       setState("error");
-      return;
     }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `resume-v${version.metadata.version_number}.${format}`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-    setState("success");
   }
 
   if (!version) return null;

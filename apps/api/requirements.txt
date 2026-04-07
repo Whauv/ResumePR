@@ -13,3 +13,4 @@ google-genai==1.30.0
 reportlab==4.4.3
 firebase-admin==6.8.0
 python-dotenv==1.1.1
+pytest==8.4.2

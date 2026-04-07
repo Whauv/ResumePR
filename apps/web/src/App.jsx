@@ -9,23 +9,30 @@ import DiffEditorPage from "./pages/DiffEditorPage";
 import JobInputPage from "./pages/JobInputPage";
 import ResumeVersionHistoryPage from "./pages/ResumeVersionHistoryPage";
 import UploadPage from "./pages/UploadPage";
-import { apiFetch } from "./lib/api";
+import { apiJson } from "./lib/api";
 import { firebaseAuth } from "./lib/firebase";
+import { e2ePage, isE2EMode } from "./lib/runtime";
 import { useAppStore } from "./store/appStore";
+import { useAnalysisStore } from "./store/analysisStore";
 import { useAuthStore } from "./store/authStore";
+import { useJobStore } from "./store/jobStore";
 import { useResumeStore } from "./store/resumeStore";
+import {
+  E2E_ANALYSIS,
+  E2E_JOB,
+  E2E_RESUME_PAYLOAD,
+  E2E_SUGGESTIONS,
+  E2E_VERSION,
+  E2E_VERSION_SUMMARY
+} from "./test/e2eFixture";
 
 async function fetchVersionSummaries(resumeId) {
-  const response = await apiFetch(`/api/versions/${resumeId}`);
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.detail || "Failed to load version summaries.");
+  const payload = await apiJson(`/api/versions/${resumeId}`);
   return payload.versions;
 }
 
 async function fetchFullVersions(resumeId) {
-  const response = await apiFetch(`/api/resume/${resumeId}/versions`);
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.detail || "Failed to load full versions.");
+  const payload = await apiJson(`/api/resume/${resumeId}/versions`);
   return payload.versions;
 }
 
@@ -36,14 +43,30 @@ function formatHeaderDate(timestamp) {
 
 export default function App() {
   useAmbientMotion();
+  const e2eMode = isE2EMode();
   const { activePage, latestVersionId, setActivePage, setLatestVersionId } = useAppStore();
-  const { metadata, versions, versionSummaries, restoreVersion, setVersions, setVersionSummaries } = useResumeStore();
+  const {
+    metadata,
+    versions,
+    versionSummaries,
+    restoreVersion,
+    setParsedResume,
+    setVersions,
+    setVersionSummaries
+  } = useResumeStore();
+  const { setParsedJob } = useJobStore();
+  const { setAnalysis, setSuggestions } = useAnalysisStore();
   const { authUser, authState, setAuthLoading, setAuthUser, setSignedOut } = useAuthStore();
+  const effectiveAuthUser = authUser || (e2eMode ? { uid: "e2e-user" } : null);
   const activeVersion = versionSummaries.find((item) => item.version_id === latestVersionId) || versionSummaries[0] || null;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const path = window.location.pathname;
+    if (e2eMode) {
+      setActivePage(e2ePage());
+      return;
+    }
     if (path === "/signup") {
       setActivePage("resume");
       return;
@@ -51,9 +74,21 @@ export default function App() {
     if (path === "/analyze" || params.get("job_id")) {
       setActivePage("jobs");
     }
-  }, [setActivePage]);
+  }, [e2eMode, setActivePage]);
 
   useEffect(() => {
+    if (!e2eMode) return;
+    setParsedResume(E2E_RESUME_PAYLOAD);
+    setParsedJob(E2E_JOB);
+    setAnalysis(E2E_ANALYSIS);
+    setSuggestions(E2E_SUGGESTIONS);
+    setVersions([E2E_VERSION]);
+    setVersionSummaries([E2E_VERSION_SUMMARY]);
+    setLatestVersionId(E2E_VERSION.version_id);
+  }, [e2eMode, setAnalysis, setLatestVersionId, setParsedJob, setParsedResume, setSuggestions, setVersionSummaries, setVersions]);
+
+  useEffect(() => {
+    if (e2eMode) return undefined;
     setAuthLoading();
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
       if (user) {
@@ -68,10 +103,10 @@ export default function App() {
       }
     });
     return () => unsubscribe();
-  }, [setAuthLoading, setAuthUser, setSignedOut]);
+  }, [e2eMode, setAuthLoading, setAuthUser, setSignedOut]);
 
   useEffect(() => {
-    if (!authUser || !metadata?.resumeId) return;
+    if (e2eMode || !effectiveAuthUser || !metadata?.resumeId) return;
     let cancelled = false;
 
     async function hydrateVersions() {
@@ -94,9 +129,9 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [authUser, metadata?.resumeId, setVersionSummaries, setVersions, versionSummaries.length, versions.length]);
+  }, [e2eMode, effectiveAuthUser, metadata?.resumeId, setVersionSummaries, setVersions, versionSummaries.length, versions.length]);
 
-  if (authState === "loading") {
+  if (!e2eMode && authState === "loading") {
     return (
       <main className="min-h-screen px-4 py-12">
         <AmbientBackdrop />
@@ -109,7 +144,7 @@ export default function App() {
     );
   }
 
-  if (!authUser) {
+  if (!effectiveAuthUser) {
     return <AuthPage />;
   }
 

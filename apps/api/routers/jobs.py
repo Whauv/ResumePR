@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import json
 import re
-import sqlite3
-from pathlib import Path
 from uuid import uuid4
 
 import httpx
@@ -11,36 +9,16 @@ from bs4 import BeautifulSoup
 from fastapi import APIRouter, HTTPException, Request
 
 from models.schemas import JobParseRequest, JobParseResponse, ParsedJob
+from services.db import get_connection
 from services.keyword_extractor import extract_keywords
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
-
-DB_PATH = Path(__file__).resolve().parents[1] / "resumes.db"
 JOB_BOARD_SELECTORS = {
     "linkedin": [".description__text"],
     "greenhouse": ["#content"],
     "workday": [".css-129m7dg", ".job-description"],
     "lever": [".posting-description"],
 }
-
-
-def get_connection() -> sqlite3.Connection:
-    connection = sqlite3.connect(DB_PATH)
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS jobs (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL DEFAULT '',
-            source_url TEXT,
-            parsed_json TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    columns = {row[1] for row in connection.execute("PRAGMA table_info(jobs)").fetchall()}
-    if "user_id" not in columns:
-        connection.execute("ALTER TABLE jobs ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
-    return connection
 
 
 def clean_text(text: str) -> str:
