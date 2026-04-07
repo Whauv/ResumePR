@@ -19,7 +19,7 @@ test("command palette and diff editor smoke path render seeded workflow", async 
   await expect(page.getByText("Docker-ready resume parsing workflows", { exact: false })).toBeVisible();
 
   await page.keyboard.press("Control+K");
-  await expect(page.getByText("Command Palette")).toBeVisible();
+  await expect(page.getByText("Command Palette", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "View Versions" }).click();
   await expect(page.getByText("Timeline of tailored resumes")).toBeVisible();
   await expect(page.getByRole("heading", { name: /v1 - Example Co - Platform Engineer/i })).toBeVisible();
