@@ -22,5 +22,5 @@ test("command palette and diff editor smoke path render seeded workflow", async 
   await expect(page.getByText("Command Palette")).toBeVisible();
   await page.getByRole("button", { name: "View Versions" }).click();
   await expect(page.getByText("Timeline of tailored resumes")).toBeVisible();
-  await expect(page.getByText("Example Co")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /v1 - Example Co - Platform Engineer/i })).toBeVisible();
 });
