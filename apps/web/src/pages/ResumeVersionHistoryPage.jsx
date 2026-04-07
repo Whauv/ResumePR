@@ -1,29 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "../lib/api";
+import { apiJson } from "../lib/api";
+import { isE2EMode } from "../lib/runtime";
 import ExportModal from "../components/ExportModal";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
 import { useAppStore } from "../store/appStore";
 import { useResumeStore } from "../store/resumeStore";
 
 async function fetchVersionSummaries(resumeId) {
-  const response = await apiFetch(`/api/versions/${resumeId}`);
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.detail || "Failed to load version summaries.");
+  const payload = await apiJson(`/api/versions/${resumeId}`);
   return payload.versions;
 }
 
 async function fetchFullVersions(resumeId) {
-  const response = await apiFetch(`/api/resume/${resumeId}/versions`);
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.detail || "Failed to load full versions.");
+  const payload = await apiJson(`/api/resume/${resumeId}/versions`);
   return payload.versions;
 }
 
 async function fetchVersionDiff(versionId) {
-  const response = await apiFetch(`/api/versions/${versionId}/diff`);
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.detail || "Failed to load version diff.");
-  return payload;
+  return apiJson(`/api/versions/${versionId}/diff`);
 }
 
 function relativeTime(timestamp) {
@@ -116,6 +110,7 @@ function ResumeViewModal({ version, onClose }) {
 }
 
 export default function ResumeVersionHistoryPage() {
+  const e2eMode = isE2EMode();
   const { metadata, parsedResume, versions, versionSummaries, setVersions, setVersionSummaries, restoreVersion } = useResumeStore();
   const { latestVersionId, setActivePage, setLatestVersionId } = useAppStore();
   const [state, setState] = useState("idle");
@@ -127,6 +122,10 @@ export default function ResumeVersionHistoryPage() {
   const [exportFormat, setExportFormat] = useState("pdf");
 
   useEffect(() => {
+    if (e2eMode) {
+      setState("success");
+      return undefined;
+    }
     if (!metadata?.resumeId) return;
 
     let cancelled = false;
@@ -154,7 +153,7 @@ export default function ResumeVersionHistoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [metadata?.resumeId, setVersionSummaries, setVersions]);
+  }, [e2eMode, metadata?.resumeId, setVersionSummaries, setVersions]);
 
   const fullVersionMap = useMemo(
     () => new Map(versions.map((version) => [version.version_id, version])),

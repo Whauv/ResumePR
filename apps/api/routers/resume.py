@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import json
 import io
-import sqlite3
 from datetime import datetime, UTC
-from pathlib import Path
 from uuid import uuid4
 
 from docx import Document
@@ -22,101 +20,11 @@ from models.schemas import (
     ResumeVersionListResponse,
     ResumeVersionMetadata,
 )
+from services.db import get_connection
 from services.gap_analyzer import analyze_gap
 from services.parser import parse_resume
 
 router = APIRouter(prefix="/api/resume", tags=["resume"])
-
-DB_PATH = Path(__file__).resolve().parents[1] / "resumes.db"
-
-
-def get_connection() -> sqlite3.Connection:
-    connection = sqlite3.connect(DB_PATH)
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS resumes (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL DEFAULT '',
-            file_name TEXT NOT NULL,
-            file_type TEXT NOT NULL,
-            original_file BLOB,
-            parsed_json TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS resume_versions (
-            version_id TEXT PRIMARY KEY,
-            base_resume_id TEXT NOT NULL,
-            user_id TEXT NOT NULL DEFAULT '',
-            version_number INTEGER NOT NULL,
-            job_id TEXT NOT NULL,
-            company_name TEXT,
-            role TEXT,
-            accepted_count INTEGER NOT NULL,
-            rejected_count INTEGER NOT NULL,
-            preserved_docx_blob BLOB,
-            resume_json TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        )
-        """
-    )
-    columns = {row[1] for row in connection.execute("PRAGMA table_info(resume_versions)").fetchall()}
-    if "ats_score_before" not in columns:
-        connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_before REAL DEFAULT 0")
-    if "ats_score_after" not in columns:
-        connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_after REAL DEFAULT 0")
-    if "preserved_docx_blob" not in columns:
-        connection.execute("ALTER TABLE resume_versions ADD COLUMN preserved_docx_blob BLOB")
-    resume_columns = {row[1] for row in connection.execute("PRAGMA table_info(resumes)").fetchall()}
-    if "user_id" not in resume_columns:
-        connection.execute("ALTER TABLE resumes ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
-    if "original_file" not in resume_columns:
-        connection.execute("ALTER TABLE resumes ADD COLUMN original_file BLOB")
-    if "user_id" not in columns:
-        connection.execute("ALTER TABLE resume_versions ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS suggestion_batches (
-            id TEXT PRIMARY KEY,
-            resume_id TEXT NOT NULL,
-            user_id TEXT NOT NULL DEFAULT '',
-            job_id TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS suggestions (
-            id TEXT PRIMARY KEY,
-            batch_id TEXT NOT NULL,
-            resume_id TEXT NOT NULL,
-            user_id TEXT NOT NULL DEFAULT '',
-            job_id TEXT NOT NULL,
-            suggestion_json TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS jobs (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL DEFAULT '',
-            source_url TEXT,
-            parsed_json TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    for table_name in ("suggestion_batches", "suggestions", "jobs"):
-        table_columns = {row[1] for row in connection.execute(f"PRAGMA table_info({table_name})").fetchall()}
-        if "user_id" not in table_columns:
-            connection.execute(f"ALTER TABLE {table_name} ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
-    return connection
 
 
 def normalize_text(value: str) -> str:

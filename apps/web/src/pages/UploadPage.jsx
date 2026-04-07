@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import EmptyState from "../components/EmptyState";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
 import SkeletonBlock from "../components/SkeletonBlock";
-import { apiFetch } from "../lib/api";
+import { apiJson } from "../lib/api";
 import { useResumeStore } from "../store/resumeStore";
 
 const acceptedTypes = [
@@ -21,17 +21,10 @@ async function uploadResume(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await apiFetch("/api/resume/upload", {
+  return apiJson("/api/resume/upload", {
     method: "POST",
     body: formData
   });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail || "Upload failed.");
-  }
-
-  return response.json();
 }
 
 export default function UploadPage() {

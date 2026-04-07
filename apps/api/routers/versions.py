@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import io
 import json
-import sqlite3
 from pathlib import Path
 
 from docx import Document
@@ -20,54 +19,12 @@ from models.schemas import (
     VersionListResponse,
     VersionSummary,
 )
+from services.db import get_connection
 
 router = APIRouter(prefix="/api/versions", tags=["versions"])
 
-DB_PATH = Path(__file__).resolve().parents[1] / "resumes.db"
 
-
-def get_connection() -> sqlite3.Connection:
-    connection = sqlite3.connect(DB_PATH)
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS resume_versions (
-            version_id TEXT PRIMARY KEY,
-            base_resume_id TEXT NOT NULL,
-            user_id TEXT NOT NULL DEFAULT '',
-            version_number INTEGER NOT NULL,
-            job_id TEXT NOT NULL,
-            company_name TEXT,
-            role TEXT,
-            accepted_count INTEGER NOT NULL,
-            rejected_count INTEGER NOT NULL,
-            preserved_docx_blob BLOB,
-            resume_json TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            ats_score_before REAL DEFAULT 0,
-            ats_score_after REAL DEFAULT 0
-        )
-        """
-    )
-    columns = {row[1] for row in connection.execute("PRAGMA table_info(resume_versions)").fetchall()}
-    if "user_id" not in columns:
-        connection.execute("ALTER TABLE resume_versions ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
-    return connection
-
-
-def ensure_version_columns(connection: sqlite3.Connection) -> None:
-    columns = {row[1] for row in connection.execute("PRAGMA table_info(resume_versions)").fetchall()}
-    if "ats_score_before" not in columns:
-        connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_before REAL DEFAULT 0")
-    if "ats_score_after" not in columns:
-        connection.execute("ALTER TABLE resume_versions ADD COLUMN ats_score_after REAL DEFAULT 0")
-    if "preserved_docx_blob" not in columns:
-        connection.execute("ALTER TABLE resume_versions ADD COLUMN preserved_docx_blob BLOB")
-    resume_columns = {row[1] for row in connection.execute("PRAGMA table_info(resumes)").fetchall()}
-    if "original_file" not in resume_columns:
-        connection.execute("ALTER TABLE resumes ADD COLUMN original_file BLOB")
-
-
-def row_to_version(row: sqlite3.Row | tuple) -> ResumeVersion:
+def row_to_version(row) -> ResumeVersion:
     return ResumeVersion(
         version_id=row[0],
         base_resume_id=row[1],
@@ -210,7 +167,6 @@ def list_versions(request: Request, resume_id: str) -> VersionListResponse:
     user_id = request.state.user_id
     connection = get_connection()
     try:
-        ensure_version_columns(connection)
         rows = connection.execute(
             """
             SELECT version_id, base_resume_id, user_id, version_number, job_id, company_name, role,
@@ -246,7 +202,6 @@ def get_version_diff(request: Request, version_id: str) -> VersionDiffResponse:
     user_id = request.state.user_id
     connection = get_connection()
     try:
-        ensure_version_columns(connection)
         row = connection.execute(
             """
             SELECT version_id, base_resume_id, user_id, version_number, job_id, company_name, role,
@@ -286,7 +241,6 @@ def export_version(
     user_id = request.state.user_id
     connection = get_connection()
     try:
-        ensure_version_columns(connection)
         row = connection.execute(
             """
             SELECT version_id, base_resume_id, user_id, version_number, job_id, company_name, role,

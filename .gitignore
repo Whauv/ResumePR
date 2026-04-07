@@ -7,3 +7,6 @@ dist/
 .venv/
 .env
 .env.local
+.pytest_cache/
+pytest-cache-files-*/
+apps/api/.pytest_tmp/

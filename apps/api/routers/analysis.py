@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import sqlite3
-from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
@@ -17,67 +15,10 @@ from models.schemas import (
     SuggestResponse,
 )
 from services.ai_suggester import generate_suggestions
+from services.db import get_connection
 from services.gap_analyzer import analyze_gap
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
-
-DB_PATH = Path(__file__).resolve().parents[1] / "resumes.db"
-
-
-def get_connection() -> sqlite3.Connection:
-    connection = sqlite3.connect(DB_PATH)
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS analyses (
-            id TEXT PRIMARY KEY,
-            resume_id TEXT NOT NULL,
-            job_id TEXT NOT NULL,
-            user_id TEXT NOT NULL DEFAULT '',
-            report_json TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS suggestion_batches (
-            id TEXT PRIMARY KEY,
-            resume_id TEXT NOT NULL,
-            job_id TEXT NOT NULL,
-            user_id TEXT NOT NULL DEFAULT '',
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS suggestions (
-            id TEXT PRIMARY KEY,
-            batch_id TEXT NOT NULL,
-            resume_id TEXT NOT NULL,
-            job_id TEXT NOT NULL,
-            user_id TEXT NOT NULL DEFAULT '',
-            suggestion_json TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    for table_name in ("analyses", "suggestion_batches", "suggestions"):
-        columns = {row[1] for row in connection.execute(f"PRAGMA table_info({table_name})").fetchall()}
-        if "user_id" not in columns:
-            connection.execute(f"ALTER TABLE {table_name} ADD COLUMN user_id TEXT NOT NULL DEFAULT ''")
-    return connection
-
-
-def fetch_record(connection: sqlite3.Connection, table: str, record_id: str) -> str | None:
-    try:
-        row = connection.execute(
-            f"SELECT parsed_json FROM {table} WHERE id = ?",
-            (record_id,),
-        ).fetchone()
-    except sqlite3.OperationalError:
-        return None
-    return row[0] if row else None
 
 
 def fetch_resume_and_job(connection: sqlite3.Connection, user_id: str, resume_id: str, job_id: str) -> tuple[ParsedResume, ParsedJob]:

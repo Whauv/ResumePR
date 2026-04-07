@@ -22,6 +22,7 @@ EMAIL_PATTERN = re.compile(r"[\w\.-]+@[\w\.-]+\.\w+")
 PHONE_PATTERN = re.compile(r"(\+?\d[\d\-\(\) ]{7,}\d)")
 LINK_PATTERN = re.compile(r"(https?://\S+|linkedin\.com/\S+|github\.com/\S+)", re.IGNORECASE)
 BULLET_PREFIX = re.compile(r"^(\u2022|\-|\*)\s*")
+LOCATION_PATTERN = re.compile(r"\b([A-Z][a-z]+(?: [A-Z][a-z]+)*,\s*[A-Z]{2})\b")
 
 
 def parse_resume(file_bytes: bytes, file_type: str) -> dict:
@@ -35,8 +36,10 @@ def parse_resume(file_bytes: bytes, file_type: str) -> dict:
         raise ValueError(f"Unsupported file type: {file_type}")
 
     lines = normalize_lines(text)
-    sections = split_sections(lines)
-    name, contact = parse_header(lines[:8])
+    first_section_index = next((index for index, line in enumerate(lines) if canonical_section(line)), len(lines))
+    header_lines = lines[:first_section_index]
+    sections = split_sections(lines[first_section_index:])
+    name, contact = parse_header(header_lines[:8])
 
     return {
         "name": name,
@@ -96,10 +99,17 @@ def parse_header(lines: list[str]) -> tuple[str, dict]:
 
     location_candidates = [
         line for line in lines
-        if "," in line and not EMAIL_PATTERN.search(line) and not LINK_PATTERN.search(line)
+        if "," in line and not LINK_PATTERN.search(line)
     ]
-    if location_candidates:
-        contact["location"] = location_candidates[0]
+    for candidate in location_candidates:
+        location_match = LOCATION_PATTERN.search(candidate)
+        if location_match:
+            contact["location"] = location_match.group(1)
+            break
+    else:
+        location_match = LOCATION_PATTERN.search(header_blob)
+        if location_match:
+            contact["location"] = location_match.group(1)
 
     return name, contact
 
