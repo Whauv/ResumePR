@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
-from models.schemas import (
+from resumepr_api.models.schemas import (
     ParsedResume,
     ResumeVersion,
     ResumeVersionMetadata,
@@ -19,7 +19,7 @@ from models.schemas import (
     VersionListResponse,
     VersionSummary,
 )
-from services.db import get_connection
+from resumepr_api.services.db import get_connection
 
 router = APIRouter(prefix="/api/versions", tags=["versions"])
 

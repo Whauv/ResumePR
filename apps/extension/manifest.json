@@ -17,7 +17,7 @@
     "https://*.glassdoor.com/*"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "public/popup.html"
   },
   "content_scripts": [
     {
@@ -30,7 +30,7 @@
         "https://*.indeed.com/*",
         "https://*.glassdoor.com/*"
       ],
-      "js": ["content.js"]
+      "js": ["src/content.js"]
     }
   ]
 }

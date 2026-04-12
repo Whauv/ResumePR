@@ -20,7 +20,7 @@ def test_health_and_protected_export_flow():
     os.environ["RESUMEPR_DB_PATH"] = str(db_path)
     os.environ["CORS_ALLOWED_ORIGINS"] = "http://localhost:5173"
 
-    import main as api_main
+    import resumepr_api.main as api_main
 
     api_main = importlib.reload(api_main)
     api_main.verify_bearer_token = lambda _token: {"uid": "user-1"}
@@ -36,7 +36,7 @@ def test_health_and_protected_export_flow():
             assert unauthorized.json()["request_id"]
             assert unauthorized.headers["x-request-id"] == unauthorized.json()["request_id"]
 
-            from services.db import get_connection
+            from resumepr_api.services.db import get_connection
 
             connection = get_connection()
             try:
@@ -141,7 +141,7 @@ def test_validation_and_unhandled_errors_include_request_id():
     db_path = scratch_dir / f"integration-{uuid4().hex}.db"
     os.environ["RESUMEPR_DB_PATH"] = str(db_path)
 
-    import main as api_main
+    import resumepr_api.main as api_main
 
     api_main = importlib.reload(api_main)
     api_main.verify_bearer_token = lambda _token: {"uid": "user-1"}

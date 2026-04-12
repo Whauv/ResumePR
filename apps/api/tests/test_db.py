@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from services.db import INDEX_NAMES, run_migrations
+from resumepr_api.services.db import INDEX_NAMES, run_migrations
 
 
 def test_run_migrations_creates_expected_tables_and_indexes():

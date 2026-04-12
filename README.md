@@ -7,9 +7,9 @@ ResumePR is an AI-assisted resume tailoring platform built as a monorepo. It com
 ```text
 ResumePR/
 |-- apps/
-|   |-- api/          FastAPI backend, AI services, parsing, analysis, export
+|   |-- api/          FastAPI backend, packaged under src/resumepr_api
 |   |-- web/          React + Vite + Tailwind web app
-|   `-- extension/    Chrome extension for job description capture
+|   `-- extension/    Chrome extension with src/public layout
 |-- .env.example      Shared environment variable reference
 |-- package.json      Root helper scripts for local development
 |-- README.md
@@ -102,7 +102,7 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
-uvicorn main:app --reload
+uvicorn resumepr_api.main:app --reload --app-dir src
 ```
 
 API default URL: `http://127.0.0.1:8000`
@@ -124,7 +124,7 @@ Web default URL: `http://127.0.0.1:5173`
 
 ```bash
 python -m pytest apps/api/tests -o cache_dir=apps/api/.pytest_cache
-python -m compileall apps/api/main.py apps/api/routers apps/api/services apps/api/tests
+python -m compileall apps/api/src apps/api/tests
 ```
 
 ### 4.6. Run web tests

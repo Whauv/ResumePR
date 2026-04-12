@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from services.gap_analyzer import analyze_gap
+from resumepr_api.services.gap_analyzer import analyze_gap
 
 
 def test_gap_analyzer_reports_missing_keywords_and_flags():

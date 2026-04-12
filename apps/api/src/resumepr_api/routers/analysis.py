@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 
-from models.schemas import (
+from resumepr_api.models.schemas import (
     GapAnalysisRequest,
     GapAnalysisResponse,
     GapReport,
@@ -14,9 +14,9 @@ from models.schemas import (
     SuggestRequest,
     SuggestResponse,
 )
-from services.ai_suggester import generate_suggestions
-from services.db import get_connection
-from services.gap_analyzer import analyze_gap
+from resumepr_api.services.ai_suggester import generate_suggestions
+from resumepr_api.services.db import get_connection
+from resumepr_api.services.gap_analyzer import analyze_gap
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
