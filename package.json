@@ -8,6 +8,6 @@
     "preview:web": "npm --prefix apps/web run preview",
     "test:web": "npm --prefix apps/web run test",
     "install:web": "npm --prefix apps/web install",
-    "dev:api": "uvicorn main:app --reload --app-dir apps/api"
+    "dev:api": "uvicorn resumepr_api.main:app --reload --app-dir apps/api/src"
   }
 }

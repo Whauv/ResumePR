@@ -6,7 +6,7 @@ import pytest
 
 Document = pytest.importorskip("docx").Document
 
-from services.parser import parse_resume
+from resumepr_api.services.parser import parse_resume
 
 
 def build_sample_docx() -> bytes:

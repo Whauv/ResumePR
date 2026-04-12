@@ -8,7 +8,7 @@ from uuid import uuid4
 from docx import Document
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
-from models.schemas import (
+from resumepr_api.models.schemas import (
     ApplyEditsRequest,
     ApplyEditsResponse,
     EditSuggestion,
@@ -20,9 +20,9 @@ from models.schemas import (
     ResumeVersionListResponse,
     ResumeVersionMetadata,
 )
-from services.db import get_connection
-from services.gap_analyzer import analyze_gap
-from services.parser import parse_resume
+from resumepr_api.services.db import get_connection
+from resumepr_api.services.gap_analyzer import analyze_gap
+from resumepr_api.services.parser import parse_resume
 
 router = APIRouter(prefix="/api/resume", tags=["resume"])
 

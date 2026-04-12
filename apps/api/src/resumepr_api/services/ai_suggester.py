@@ -9,7 +9,7 @@ from uuid import uuid4
 import httpx
 from pydantic import BaseModel, ValidationError
 
-from models.schemas import EditSuggestion
+from resumepr_api.models.schemas import EditSuggestion
 
 try:
     from google import genai

@@ -28,7 +28,7 @@ jobs:
       - name: Run API tests
         run: python -m pytest tests -o cache_dir=.pytest_cache
       - name: Compile API sources
-        run: python -m compileall main.py routers services tests
+        run: python -m compileall main.py src tests
 
   web:
     runs-on: ubuntu-latest

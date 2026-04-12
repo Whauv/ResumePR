@@ -10,3 +10,11 @@ dist/
 .pytest_cache/
 pytest-cache-files-*/
 apps/api/.pytest_tmp/
+apps/api/resumes.db
+apps/api/integration-local.db
+apps/api/__pycache__/
+apps/api/src/**/__pycache__/
+apps/api/tests/__pycache__/
+apps/web/node_modules/
+apps/web/test-results/
+playwright-report/

@@ -8,9 +8,9 @@ import httpx
 from bs4 import BeautifulSoup
 from fastapi import APIRouter, HTTPException, Request
 
-from models.schemas import JobParseRequest, JobParseResponse, ParsedJob
-from services.db import get_connection
-from services.keyword_extractor import extract_keywords
+from resumepr_api.models.schemas import JobParseRequest, JobParseResponse, ParsedJob
+from resumepr_api.services.db import get_connection
+from resumepr_api.services.keyword_extractor import extract_keywords
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 JOB_BOARD_SELECTORS = {
