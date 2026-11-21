@@ -6,6 +6,7 @@ import {
 } from "firebase/auth";
 import AmbientBackdrop from "../components/AmbientBackdrop";
 import { googleProvider, firebaseAuth } from "../lib/firebase";
+import { navigateTo } from "../lib/navigation";
 import { useAuthStore } from "../store/authStore";
 
 export default function AuthPage() {
@@ -25,6 +26,7 @@ export default function AuthPage() {
       } else {
         await signInWithEmailAndPassword(firebaseAuth, email, password);
       }
+      navigateTo("/app", { replace: true });
     } catch (error) {
       setAuthError(error.message);
     }
@@ -33,6 +35,7 @@ export default function AuthPage() {
   async function handleGoogleAuth() {
     try {
       await signInWithPopup(firebaseAuth, googleProvider);
+      navigateTo("/app", { replace: true });
     } catch (error) {
       setAuthError(error.message);
     }
@@ -53,6 +56,19 @@ export default function AuthPage() {
             Upload a resume, ingest a job description, inspect the skills gap, and approve only the rewrites that feel true.
             Every tailored version stays saved to your account.
           </p>
+          <div className="flex flex-wrap gap-3">
+            <a href="/" className="theme-secondary-button rounded-full px-5 py-3 text-sm font-semibold">
+              Back to landing page
+            </a>
+            <a
+              href="https://github.com/Whauv/ResumePR"
+              target="_blank"
+              rel="noreferrer"
+              className="theme-subtle-button rounded-full px-5 py-3 text-sm font-semibold"
+            >
+              View GitHub repo
+            </a>
+          </div>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="glass-card rounded-[1.8rem] p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Gap View</p>

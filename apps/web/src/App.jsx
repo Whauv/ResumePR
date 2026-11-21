@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import AmbientBackdrop from "./components/AmbientBackdrop";
 import CommandPalette from "./components/CommandPalette";
@@ -7,10 +8,12 @@ import useAmbientMotion from "./hooks/useAmbientMotion";
 import AuthPage from "./pages/AuthPage";
 import DiffEditorPage from "./pages/DiffEditorPage";
 import JobInputPage from "./pages/JobInputPage";
+import LandingPage from "./pages/LandingPage";
 import ResumeVersionHistoryPage from "./pages/ResumeVersionHistoryPage";
 import UploadPage from "./pages/UploadPage";
 import { apiJson } from "./lib/api";
 import { firebaseAuth } from "./lib/firebase";
+import { navigateTo } from "./lib/navigation";
 import { e2ePage, isE2EMode } from "./lib/runtime";
 import { useAppStore } from "./store/appStore";
 import { useAnalysisStore } from "./store/analysisStore";
@@ -41,9 +44,25 @@ function formatHeaderDate(timestamp) {
   return new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function resolveWorkspacePage(pathname) {
+  const params = new URLSearchParams(window.location.search);
+  if (pathname === "/analyze" || params.get("job_id")) return "jobs";
+  return "resume";
+}
+
+const navItems = [
+  { id: "resume", label: "Resume Upload" },
+  { id: "jobs", label: "Job Intake" },
+  { id: "diff", label: "Diff Editor" },
+  { id: "versions", label: "Version History" }
+];
+
 export default function App() {
   useAmbientMotion();
+  const reduceMotion = useReducedMotion();
+  const pillTransition = reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 };
   const e2eMode = isE2EMode();
+  const [routePath, setRoutePath] = useState(() => window.location.pathname || "/");
   const { activePage, latestVersionId, setActivePage, setLatestVersionId } = useAppStore();
   const {
     metadata,
@@ -59,22 +78,26 @@ export default function App() {
   const { authUser, authState, setAuthLoading, setAuthUser, setSignedOut } = useAuthStore();
   const effectiveAuthUser = authUser || (e2eMode ? { uid: "e2e-user" } : null);
   const activeVersion = versionSummaries.find((item) => item.version_id === latestVersionId) || versionSummaries[0] || null;
+  const publicRoute = !e2eMode && routePath === "/";
+  const authRoute = !e2eMode && (routePath === "/login" || routePath === "/signup");
+  const workspaceRoute = e2eMode || routePath === "/app" || routePath === "/analyze";
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const path = window.location.pathname;
+    if (e2eMode) return undefined;
+    const handleRouteChange = () => setRoutePath(window.location.pathname || "/");
+    window.addEventListener("popstate", handleRouteChange);
+    return () => window.removeEventListener("popstate", handleRouteChange);
+  }, [e2eMode]);
+
+  useEffect(() => {
     if (e2eMode) {
       setActivePage(e2ePage());
       return;
     }
-    if (path === "/signup") {
-      setActivePage("resume");
-      return;
+    if (workspaceRoute) {
+      setActivePage(resolveWorkspacePage(routePath));
     }
-    if (path === "/analyze" || params.get("job_id")) {
-      setActivePage("jobs");
-    }
-  }, [e2eMode, setActivePage]);
+  }, [e2eMode, routePath, setActivePage, workspaceRoute]);
 
   useEffect(() => {
     if (!e2eMode) return;
@@ -131,7 +154,23 @@ export default function App() {
     };
   }, [e2eMode, effectiveAuthUser, metadata?.resumeId, setVersionSummaries, setVersions, versionSummaries.length, versions.length]);
 
-  if (!e2eMode && authState === "loading") {
+  useEffect(() => {
+    if (e2eMode || !effectiveAuthUser) return;
+    if (authRoute) {
+      navigateTo("/app", { replace: true });
+    }
+  }, [authRoute, e2eMode, effectiveAuthUser]);
+
+  if (publicRoute) {
+    return (
+      <div className="theme-app-frame relative min-h-screen overflow-x-hidden">
+        <AmbientBackdrop />
+        <LandingPage />
+      </div>
+    );
+  }
+
+  if (!e2eMode && workspaceRoute && authState === "loading") {
     return (
       <main className="min-h-screen px-4 py-12">
         <AmbientBackdrop />
@@ -144,7 +183,11 @@ export default function App() {
     );
   }
 
-  if (!effectiveAuthUser) {
+  if (authRoute) {
+    return <AuthPage />;
+  }
+
+  if (!effectiveAuthUser && workspaceRoute) {
     return <AuthPage />;
   }
 
@@ -165,42 +208,28 @@ export default function App() {
           </div>
 
           <div className="theme-nav-group flex flex-wrap gap-3 rounded-full p-1">
-            <button
-              type="button"
-              onClick={() => setActivePage("resume")}
-              className={`theme-nav-pill rounded-full px-4 py-2.5 text-sm font-semibold transition ${
-                activePage === "resume" ? "theme-nav-pill-active" : ""
-              }`}
-            >
-              Resume Upload
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivePage("jobs")}
-              className={`theme-nav-pill rounded-full px-4 py-2.5 text-sm font-semibold transition ${
-                activePage === "jobs" ? "theme-nav-pill-active" : ""
-              }`}
-            >
-              Job Intake
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivePage("diff")}
-              className={`theme-nav-pill rounded-full px-4 py-2.5 text-sm font-semibold transition ${
-                activePage === "diff" ? "theme-nav-pill-active" : ""
-              }`}
-            >
-              Diff Editor
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivePage("versions")}
-              className={`theme-nav-pill rounded-full px-4 py-2.5 text-sm font-semibold transition ${
-                activePage === "versions" ? "theme-nav-pill-active" : ""
-              }`}
-            >
-              Version History
-            </button>
+            {navItems.map((item) => {
+              const isActive = activePage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActivePage(item.id)}
+                  className={`theme-nav-pill relative rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                    isActive ? "text-white" : ""
+                  }`}
+                >
+                  {isActive ? (
+                    <motion.span
+                      layoutId="nav-pill"
+                      className="theme-nav-pill-active absolute inset-0 rounded-full"
+                      transition={pillTransition}
+                    />
+                  ) : null}
+                  <span className="relative z-10">{item.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-3">
@@ -243,10 +272,20 @@ export default function App() {
         </div>
       </nav>
 
-      {activePage === "resume" ? <UploadPage /> : null}
-      {activePage === "jobs" ? <JobInputPage /> : null}
-      {activePage === "diff" ? <DiffEditorPage /> : null}
-      {activePage === "versions" ? <ResumeVersionHistoryPage /> : null}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activePage}
+          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
+          transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeOut" }}
+        >
+          {activePage === "resume" ? <UploadPage /> : null}
+          {activePage === "jobs" ? <JobInputPage /> : null}
+          {activePage === "diff" ? <DiffEditorPage /> : null}
+          {activePage === "versions" ? <ResumeVersionHistoryPage /> : null}
+        </motion.div>
+      </AnimatePresence>
 
       <footer className="theme-footer mx-4 mb-4 mt-10 rounded-[1.6rem] px-4 py-4 text-center text-xs font-medium tracking-[0.16em]">
         Command Palette: Cmd/Ctrl+K

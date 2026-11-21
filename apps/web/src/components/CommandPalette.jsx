@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useAppStore } from "../store/appStore";
 
 const actions = [
@@ -10,6 +11,7 @@ const actions = [
 
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
   const { setActivePage } = useAppStore();
 
   useEffect(() => {
@@ -38,29 +40,43 @@ export default function CommandPalette() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [setActivePage]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-center bg-stone-950/30 p-4 pt-24 backdrop-blur-sm">
-      <div className="theme-shell w-full max-w-2xl rounded-[2rem] p-4">
-        <p className="theme-faint-text px-3 pb-3 text-xs font-semibold uppercase tracking-[0.18em]">Command Palette</p>
-        <div className="space-y-2">
-          {actions.map((action) => (
-            <button
-              key={action.id}
-              type="button"
-              onClick={() => {
-                setActivePage(action.page);
-                setOpen(false);
-              }}
-              className="theme-nav-pill flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left transition"
-            >
-              <span className="text-sm font-semibold">{action.label}</span>
-              <span className="theme-faint-text text-xs">{action.shortcut}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          className="fixed inset-0 z-40 flex items-start justify-center bg-stone-950/30 p-4 pt-24 backdrop-blur-sm"
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.15 }}
+        >
+          <motion.div
+            className="theme-shell w-full max-w-2xl rounded-[2rem] p-4"
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: -4 }}
+            transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeOut" }}
+          >
+            <p className="theme-faint-text px-3 pb-3 text-xs font-semibold uppercase tracking-[0.18em]">Command Palette</p>
+            <div className="space-y-2">
+              {actions.map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  onClick={() => {
+                    setActivePage(action.page);
+                    setOpen(false);
+                  }}
+                  className="theme-nav-pill flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left transition"
+                >
+                  <span className="text-sm font-semibold">{action.label}</span>
+                  <span className="theme-faint-text text-xs">{action.shortcut}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
