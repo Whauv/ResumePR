@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -12,6 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from resumepr_api.config import get_settings
 from resumepr_api.routers.analysis import router as analysis_router
 from resumepr_api.routers.jobs import router as jobs_router
 from resumepr_api.routers.resume import router as resume_router
@@ -19,11 +19,14 @@ from resumepr_api.routers.versions import router as versions_router
 from resumepr_api.services.auth import verify_bearer_token
 from resumepr_api.services.db import get_connection
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
+# The package lives at apps/api/src/resumepr_api, so the project .env is three
+# parents up (apps/api/.env), not beside this module.
+ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(ENV_PATH)
 
 
 def configure_logging() -> None:
-    level_name = os.getenv("LOG_LEVEL", "INFO").upper()
+    level_name = get_settings().log_level
     logging.basicConfig(
         level=getattr(logging, level_name, logging.INFO),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
@@ -46,8 +49,7 @@ app = FastAPI(title="ResumePR API", version="0.1.0", lifespan=lifespan)
 
 
 def allowed_origins() -> list[str]:
-    raw_origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
-    return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    return list(get_settings().cors_allowed_origins)
 
 
 class FirebaseAuthMiddleware(BaseHTTPMiddleware):

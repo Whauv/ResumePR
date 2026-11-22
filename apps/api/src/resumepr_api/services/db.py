@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-import os
 import sqlite3
 from pathlib import Path
 from typing import Callable
 
+from resumepr_api.config import default_db_path, get_settings
+
 Migration = tuple[int, str, Callable[[sqlite3.Connection], None]]
 
 
-def default_db_path() -> Path:
-    return Path(__file__).resolve().parents[1] / "resumes.db"
-
-
 def resolve_db_path() -> Path:
-    raw_path = os.getenv("RESUMEPR_DB_PATH", "").strip()
-    return Path(raw_path) if raw_path else default_db_path()
+    return get_settings().db_path
 
 
 def migration_001_initial_schema(connection: sqlite3.Connection) -> None:
@@ -148,6 +144,20 @@ def run_migrations(connection: sqlite3.Connection) -> None:
         )
 
 
+# Tracks DB paths already migrated in this process so migrations run once per
+# database rather than on every connection. run_migrations itself stays
+# idempotent, so this is purely an optimization.
+_migrated_paths: set[str] = set()
+
+
+def ensure_migrations(connection: sqlite3.Connection, db_path: Path) -> None:
+    key = str(db_path)
+    if key in _migrated_paths:
+        return
+    run_migrations(connection)
+    _migrated_paths.add(key)
+
+
 def get_connection() -> sqlite3.Connection:
     db_path = resolve_db_path()
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -155,5 +165,5 @@ def get_connection() -> sqlite3.Connection:
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("PRAGMA journal_mode = WAL")
-    run_migrations(connection)
+    ensure_migrations(connection, db_path)
     return connection

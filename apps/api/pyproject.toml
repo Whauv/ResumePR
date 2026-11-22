@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# Make the src-layout package importable without the sys.path hack.
+# Paths are relative to this file's directory (pytest rootdir = apps/api).
+pythonpath = ["src", "."]
+testpaths = ["tests"]
