@@ -2,49 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import DiffCard from "../components/DiffCard";
 import EmptyState from "../components/EmptyState";
 import SkeletonBlock from "../components/SkeletonBlock";
-import { apiJson } from "../lib/api";
+import useCountUp from "../hooks/useCountUp";
+import { fetchSuggestions } from "../lib/analysisApi";
+import { applyAcceptedEdits } from "../lib/resumeApi";
 import { isE2EMode } from "../lib/runtime";
 import { useAnalysisStore } from "../store/analysisStore";
 import { useAppStore } from "../store/appStore";
 import { useJobStore } from "../store/jobStore";
 import { useResumeStore } from "../store/resumeStore";
 
-async function fetchSuggestions(resumeId, jobId) {
-  return apiJson("/api/analysis/suggest", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ resume_id: resumeId, job_id: jobId })
-  });
-}
-
-async function applyAcceptedEdits(resumeId, acceptedEditIds) {
-  return apiJson("/api/resume/apply-edits", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ resume_id: resumeId, accepted_edit_ids: acceptedEditIds })
-  });
-}
-
-function useCountUp(target) {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    let frameId;
-    const startTime = performance.now();
-    const duration = 600;
-
-    function tick(now) {
-      const progress = Math.min((now - startTime) / duration, 1);
-      setValue(target * progress);
-      if (progress < 1) frameId = requestAnimationFrame(tick);
-    }
-
-    frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
-  }, [target]);
-
-  return Math.round(value);
-}
+const COUNT_UP_OPTIONS = { duration: 600, round: true };
 
 function buildSectionLabel(suggestion, resume) {
   if (suggestion.section === "experience") {
@@ -76,7 +43,7 @@ export default function DiffEditorPage() {
     setAllDecisions,
     clearSuggestions
   } = useAnalysisStore();
-  const { phase4TargetSection, setActivePage, setLatestVersionId } = useAppStore();
+  const { focusSection, setActivePage, setLatestVersionId } = useAppStore();
   const [applyState, setApplyState] = useState("idle");
   const [applyError, setApplyError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -126,20 +93,20 @@ export default function DiffEditorPage() {
 
   const sortedSuggestions = useMemo(() => {
     const next = [...suggestions];
-    if (!phase4TargetSection) return next;
+    if (!focusSection) return next;
     return next.sort((left, right) => {
-      const leftMatch = left.section === phase4TargetSection ? 1 : 0;
-      const rightMatch = right.section === phase4TargetSection ? 1 : 0;
+      const leftMatch = left.section === focusSection ? 1 : 0;
+      const rightMatch = right.section === focusSection ? 1 : 0;
       return rightMatch - leftMatch || right.confidence - left.confidence;
     });
-  }, [phase4TargetSection, suggestions]);
+  }, [focusSection, suggestions]);
 
   const acceptedIds = sortedSuggestions.filter((suggestion) => decisions[suggestion.id] === "accepted").map((suggestion) => suggestion.id);
   const rejectedCount = sortedSuggestions.filter((suggestion) => decisions[suggestion.id] === "rejected").length;
   const acceptedCount = acceptedIds.length;
-  const acceptedCounter = useCountUp(acceptedCount);
-  const rejectedCounter = useCountUp(rejectedCount);
-  const suggestionCounter = useCountUp(sortedSuggestions.length);
+  const acceptedCounter = useCountUp(acceptedCount, COUNT_UP_OPTIONS);
+  const rejectedCounter = useCountUp(rejectedCount, COUNT_UP_OPTIONS);
+  const suggestionCounter = useCountUp(sortedSuggestions.length, COUNT_UP_OPTIONS);
 
   const summary = useMemo(() => {
     const acceptedSuggestions = sortedSuggestions.filter((suggestion) => decisions[suggestion.id] === "accepted");

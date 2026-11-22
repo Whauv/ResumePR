@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ResumePR - Resume Upload Redesign</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0c10;
+        --surface-1: #0f1318;
+        --surface-2: #141820;
+        --surface-3: #1a1f2b;
+        --teal: #0d9488;
+        --teal-deep: #0b7c77;
+        --blue: #3b82f6;
+        --success: #22c55e;
+        --warn: #f59e0b;
+        --text: #f1f5f9;
+        --text-2: #94a3b8;
+        --text-3: #475569;
+        --border: rgba(255, 255, 255, 0.07);
+        --border-active: rgba(13, 148, 136, 0.35);
+        --teal-glow: rgba(13, 148, 136, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Geist", "Inter", sans-serif;
+      }
+
+      body.cursor-enhanced {
+        cursor: none;
+      }
+
+      .page-bg {
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(circle at 18% 10%, rgba(59, 130, 246, 0.06), transparent 42%),
+          radial-gradient(circle at 84% 16%, rgba(13, 148, 136, 0.09), transparent 38%),
+          var(--bg);
+      }
+
+      .page-bg::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 18px 18px;
+      }
+
+      .shell {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: clamp(1rem, 3vw, 2rem) clamp(1.5rem, 4vw, 3rem) 2rem;
+      }
+
+      .top-header {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 12px 12px 0 0;
+        border-bottom: 1px solid var(--border);
+        padding: 0.95rem 1.2rem;
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .brand {
+        min-width: 0;
+      }
+
+      .brand-eye {
+        margin: 0;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--teal);
+      }
+
+      .brand-title {
+        margin: 0.4rem 0 0;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .center-pill {
+        padding: 8px 16px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-2);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+      }
+
+      .version-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 6px 12px;
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--warn);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .version-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--warn);
+        animation: pulse 2s infinite;
+      }
+
+      .signout {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: transparent;
+        color: var(--text-2);
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-weight: 500;
+        font-family: inherit;
+      }
+
+      .signout:hover {
+        color: var(--text);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .tab-bar {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-top: none;
+        border-bottom: 1px solid var(--border);
+        border-radius: 0 0 12px 12px;
+        padding: 0.9rem 1.2rem;
+      }
+
+      .tab-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .tab {
+        position: relative;
+        border: 1px solid transparent;
+        background: transparent;
+        color: #64748b;
+        font: 500 14px/1 "Geist", "Inter", sans-serif;
+        padding: 0.6rem 0.95rem;
+        border-radius: 6px;
+      }
+
+      .tab::after {
+        content: "";
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 5px;
+        height: 2px;
+        background: var(--teal);
+        transform: scaleX(0);
+        transform-origin: left center;
+        transition: transform 150ms ease;
+      }
+
+      .tab:hover {
+        color: #cbd5e1;
+      }
+
+      .tab:hover::after {
+        transform: scaleX(1);
+      }
+
+      .tab.active {
+        color: #fff;
+        background: var(--teal);
+        border-color: rgba(13, 148, 136, 0.7);
+        box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.4) inset;
+        transition: background 150ms ease, box-shadow 150ms ease;
+      }
+
+      .tab.active::after {
+        display: none;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: 52% 46%;
+        gap: 2rem;
+        padding-top: 2rem;
+        align-items: start;
+      }
+
+      .col-left,
+      .col-right {
+        display: flex;
+        flex-direction: column;
+        gap: 1.15rem;
+      }
+
+      .card {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.75rem;
+      }
+
+      .branch-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(13, 148, 136, 0.25);
+        background: rgba(13, 148, 136, 0.1);
+        color: var(--teal);
+        font: 500 11px/1 "JetBrains Mono", monospace;
+        letter-spacing: 0.05em;
+        padding: 6px 10px;
+        text-transform: uppercase;
+      }
+
+      .branch-icon {
+        font-size: 13px;
+        line-height: 1;
+      }
+
+      .headline {
+        margin: 1rem 0 0;
+        font-size: 24px;
+        line-height: 1.3;
+        font-weight: 700;
+      }
+
+      .headline .teal {
+        color: var(--teal);
+      }
+
+      .body-text {
+        margin: 0.85rem 0 0;
+        color: var(--text-2);
+        line-height: 1.7;
+        font-size: 14px;
+      }
+
+      .phase-row {
+        margin-top: 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .phase-pill {
+        border-radius: 999px;
+        padding: 0.32rem 0.7rem;
+        font: 500 11px/1.2 "JetBrains Mono", monospace;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: var(--text-2);
+        background: transparent;
+      }
+
+      .phase-pill.active {
+        color: #fff;
+        border-color: rgba(13, 148, 136, 0.45);
+        background: var(--teal);
+      }
+
+      .phase-link {
+        width: 20px;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .cv-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--text-2);
+        font: 500 11px/1 "JetBrains Mono", monospace;
+        padding: 7px 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .upload-title {
+        margin: 0.9rem 0 0;
+        font-size: 20px;
+        font-weight: 600;
+      }
+
+      .drop-zone {
+        margin-top: 1rem;
+        height: 120px;
+        border-radius: 12px;
+        border: 2px dashed rgba(13, 148, 136, 0.3);
+        background: rgba(255, 255, 255, 0.02);
+        display: grid;
+        place-content: center;
+        text-align: center;
+        gap: 0.5rem;
+        transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+      }
+
+      .drop-zone.active {
+        border-style: solid;
+        border-color: rgba(13, 148, 136, 0.6);
+        background: rgba(13, 148, 136, 0.06);
+        box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.4), 0 0 44px var(--teal-glow);
+      }
+
+      .drop-icon {
+        width: 24px;
+        height: 24px;
+        color: var(--teal);
+        margin: 0 auto;
+        transition: transform 150ms ease;
+      }
+
+      .drop-zone.active .drop-icon {
+        transform: scale(1.1);
+      }
+
+      .drop-label {
+        color: var(--text-2);
+        font: 500 11px/1.2 "JetBrains Mono", monospace;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .actions {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+      }
+
+      .btn {
+        border-radius: 8px;
+        padding: 0.7rem 1rem;
+        font: 500 14px/1 "Geist", "Inter", sans-serif;
+      }
+
+      .btn-ghost {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #fff;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .btn-ghost:hover {
+        border-color: rgba(13, 148, 136, 0.45);
+        background: rgba(13, 148, 136, 0.08);
+      }
+
+      .btn-primary {
+        border: 1px solid transparent;
+        color: #fff;
+        background: var(--teal);
+        font-weight: 600;
+      }
+
+      .btn-primary:hover {
+        background: var(--teal-deep);
+        box-shadow: 0 0 20px rgba(13, 148, 136, 0.3);
+      }
+
+      .file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        border: 0;
+        padding: 0;
+        clip: rect(0 0 0 0);
+        overflow: hidden;
+      }
+
+      .file-pill {
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.75rem 0.9rem;
+        background: var(--surface-3);
+        color: var(--text-2);
+      }
+
+      .file-name {
+        margin: 0;
+        font-size: 13px;
+      }
+
+      .file-ext {
+        border-radius: 999px;
+        border: 1px solid rgba(13, 148, 136, 0.25);
+        background: rgba(13, 148, 136, 0.1);
+        color: var(--teal);
+        padding: 0.2rem 0.55rem;
+        font: 500 11px/1 "JetBrains Mono", monospace;
+      }
+
+      .preview-panel {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.75rem;
+        min-height: 610px;
+      }
+
+      .preview-top {
+        text-align: center;
+      }
+
+      .preview-art {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 1rem;
+        border-radius: 12px;
+        background: rgba(13, 148, 136, 0.1);
+        border: 1px solid rgba(13, 148, 136, 0.2);
+        display: grid;
+        place-content: center;
+      }
+
+      .preview-title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      .preview-sub {
+        margin: 0.8rem auto 0;
+        max-width: 32ch;
+        color: var(--text-2);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .skeleton-wrap {
+        margin-top: 1.55rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface-2);
+        padding: 1rem;
+      }
+
+      .skeleton-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.7rem;
+      }
+
+      .skeleton-label {
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .pending-pill {
+        border-radius: 999px;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warn);
+        font: 500 11px/1 "JetBrains Mono", monospace;
+        padding: 0.3rem 0.55rem;
+        text-transform: uppercase;
+      }
+
+      .skeleton-section {
+        margin-top: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.8rem;
+        background: rgba(255, 255, 255, 0.01);
+      }
+
+      .skeleton-section h4 {
+        margin: 0 0 0.6rem;
+        font: 600 12px/1 "JetBrains Mono", monospace;
+        letter-spacing: 0.06em;
+        color: var(--text-2);
+        text-transform: uppercase;
+      }
+
+      .sk {
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        margin-top: 0.45rem;
+        animation: shimmer 1.5s infinite;
+      }
+
+      .sk:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+
+      .sk:nth-child(3) {
+        animation-delay: 0.2s;
+      }
+
+      .sk:nth-child(4) {
+        animation-delay: 0.3s;
+      }
+
+      .sk-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .sk-chip {
+        width: 82px;
+        height: 24px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        animation: shimmer 1.5s infinite;
+      }
+
+      .sk-chip:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+
+      .sk-chip:nth-child(3) {
+        animation-delay: 0.2s;
+      }
+
+      .sk-chip:nth-child(4) {
+        animation-delay: 0.3s;
+      }
+
+      button,
+      a {
+        cursor: pointer;
+      }
+
+      button,
+      a,
+      input {
+        transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--teal);
+        outline-offset: 2px;
+      }
+
+      #cursor-dot,
+      #cursor-ring {
+        position: fixed;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0;
+        transition: transform 120ms ease, opacity 120ms ease, background 120ms ease, border-color 120ms ease;
+      }
+
+      #cursor-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--teal);
+        z-index: 9999;
+      }
+
+      #cursor-ring {
+        width: 26px;
+        height: 26px;
+        border-radius: 999px;
+        border: 1px solid rgba(13, 148, 136, 0.5);
+        z-index: 9998;
+      }
+
+      body.cursor-enhanced #cursor-dot,
+      body.cursor-enhanced #cursor-ring {
+        opacity: 1;
+      }
+
+      body.cursor-hover #cursor-dot {
+        transform: scale(1.8);
+        background: #ffffff;
+      }
+
+      body.cursor-hover #cursor-ring {
+        width: 42px;
+        height: 42px;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.3);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes shimmer {
+        0% {
+          opacity: 0.4;
+        }
+        50% {
+          opacity: 0.8;
+        }
+        100% {
+          opacity: 0.4;
+        }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .col-left {
+          animation: fadeIn 0.4s ease both;
+        }
+
+        .col-right {
+          animation: fadeIn 0.4s ease 0.12s both;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .top-header {
+          grid-template-columns: 1fr;
+        }
+
+        .content {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .shell {
+          padding: clamp(0.8rem, 3.5vw, 1.2rem);
+        }
+
+        .tab-wrap {
+          flex-wrap: wrap;
+        }
+
+        .preview-panel {
+          min-height: auto;
+        }
+
+        .skeleton-section.skills {
+          display: none;
+        }
+
+        #cursor-dot,
+        #cursor-ring {
+          display: none;
+        }
+
+        body.cursor-enhanced {
+          cursor: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-bg"></div>
+    <div id="cursor-dot"></div>
+    <div id="cursor-ring"></div>
+
+    <div class="shell">
+      <header class="top-header">
+        <div class="brand">
+          <p class="brand-eye">RESUMEPR</p>
+          <p class="brand-title">Review resume edits like a pull request</p>
+        </div>
+        <div class="center-pill">
+          Dynamic analysis, version history, and extension sync all live in one review workspace.
+        </div>
+        <div class="header-actions">
+          <div class="version-badge">
+            <span class="version-dot"></span>
+            <span>No active version</span>
+          </div>
+          <button type="button" class="signout">Sign Out</button>
+        </div>
+      </header>
+
+      <nav class="tab-bar">
+        <div class="tab-wrap" role="tablist" aria-label="ResumePR workspace sections">
+          <button type="button" role="tab" aria-selected="true" class="tab active">Resume Upload</button>
+          <button type="button" role="tab" aria-selected="false" class="tab">Job Intake</button>
+          <button type="button" role="tab" aria-selected="false" class="tab">Diff Editor</button>
+          <button type="button" role="tab" aria-selected="false" class="tab">Version History</button>
+        </div>
+      </nav>
+
+      <main class="content">
+        <div class="col-left">
+          <section class="card">
+            <span class="branch-badge"><span class="branch-icon">⎇</span>Resume Parser</span>
+            <h1 class="headline">Turn raw resumes into structured data you can review <span class="teal">like a PR</span>.</h1>
+            <p class="body-text">
+              Phase 1 focuses on resume upload and parsing so the web app can become the foundation for accept/reject diffs,
+              version history, and extension sync in later phases.
+            </p>
+            <div class="phase-row" aria-label="Phase progress indicator">
+              <span class="phase-pill active">Phase 1: Upload</span>
+              <span class="phase-link" aria-hidden="true"></span>
+              <span class="phase-pill">Phase 2: Diff</span>
+              <span class="phase-link" aria-hidden="true"></span>
+              <span class="phase-pill">Phase 3: Sync</span>
+            </div>
+          </section>
+
+          <section class="card">
+            <span class="cv-badge">CV</span>
+            <h2 class="upload-title">Upload your resume</h2>
+            <p class="body-text">
+              Drag a PDF or DOCX file here, or browse from your device. We will parse the document into summary, experience,
+              education, and skills.
+            </p>
+
+            <div id="drop-zone" class="drop-zone" aria-label="Drag and drop file upload zone">
+              <svg class="drop-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 16V5m0 0l-4 4m4-4l4 4M5 18h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <span class="drop-label">Drag PDF or DOCX here</span>
+            </div>
+
+            <div class="actions">
+              <button id="choose-file-button" type="button" class="btn btn-ghost">Choose file</button>
+              <button id="upload-resume-button" type="button" class="btn btn-primary">Upload resume</button>
+            </div>
+
+            <input id="resume-file-input" type="file" accept=".pdf,.docx" class="file-input" />
+
+            <div class="file-pill" aria-live="polite">
+              <p class="file-name" id="file-name">No file selected</p>
+              <span class="file-ext" id="file-extension">-</span>
+            </div>
+          </section>
+        </div>
+
+        <div class="col-right">
+          <section class="preview-panel">
+            <div class="preview-top">
+              <div class="preview-art" aria-hidden="true">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <rect x="6" y="5" width="13" height="16" rx="2" fill="#0d9488" fill-opacity="0.85"></rect>
+                  <path d="M12 9h3m-3 4h5m-5 4h4" stroke="#e2e8f0" stroke-width="1.2" stroke-linecap="round"></path>
+                  <path d="M21 14h5M25.5 14l-2 2M25.5 14l-2-2" stroke="#f1f5f9" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <rect x="28" y="8" width="7" height="4" rx="1" fill="#3b82f6"></rect>
+                  <rect x="28" y="14" width="7" height="4" rx="1" fill="#3b82f6" fill-opacity="0.75"></rect>
+                  <rect x="28" y="20" width="7" height="4" rx="1" fill="#3b82f6" fill-opacity="0.55"></rect>
+                </svg>
+              </div>
+              <h3 class="preview-title">Upload your resume to get started</h3>
+              <p class="preview-sub">
+                Once your PDF or DOCX is parsed, the structured preview will appear here.
+              </p>
+            </div>
+
+            <div class="skeleton-wrap">
+              <div class="skeleton-head">
+                <span class="skeleton-label">Structured Preview</span>
+                <span class="pending-pill">Pending</span>
+              </div>
+
+              <div class="skeleton-section">
+                <h4>Summary</h4>
+                <div class="sk" style="width: 86%"></div>
+                <div class="sk" style="width: 68%"></div>
+              </div>
+
+              <div class="skeleton-section">
+                <h4>Experience</h4>
+                <div class="sk" style="width: 92%"></div>
+                <div class="sk" style="width: 81%"></div>
+                <div class="sk" style="width: 59%"></div>
+              </div>
+
+              <div class="skeleton-section skills">
+                <h4>Skills</h4>
+                <div class="sk-chip-row">
+                  <div class="sk-chip"></div>
+                  <div class="sk-chip"></div>
+                  <div class="sk-chip"></div>
+                  <div class="sk-chip"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        const dropZone = document.getElementById("drop-zone");
+        const fileInput = document.getElementById("resume-file-input");
+        const chooseFileButton = document.getElementById("choose-file-button");
+        const fileName = document.getElementById("file-name");
+        const fileExt = document.getElementById("file-extension");
+        const interactiveSelector = "button, a, .drop-zone, [role='tab']";
+
+        function setDropActive(state) {
+          dropZone.classList.toggle("active", Boolean(state));
+        }
+
+        function updateSelectedFile(file) {
+          if (!file) {
+            fileName.textContent = "No file selected";
+            fileExt.textContent = "-";
+            return;
+          }
+          fileName.textContent = file.name;
+          const extension = (file.name.split(".").pop() || "").toUpperCase();
+          fileExt.textContent = extension || "-";
+        }
+
+        dropZone.addEventListener("dragover", function (event) {
+          event.preventDefault();
+          setDropActive(true);
+        });
+
+        dropZone.addEventListener("dragleave", function () {
+          setDropActive(false);
+        });
+
+        dropZone.addEventListener("drop", function (event) {
+          event.preventDefault();
+          setDropActive(false);
+          const dropped = event.dataTransfer && event.dataTransfer.files ? event.dataTransfer.files[0] : null;
+          updateSelectedFile(dropped);
+        });
+
+        chooseFileButton.addEventListener("click", function () {
+          fileInput.click();
+        });
+
+        fileInput.addEventListener("change", function () {
+          updateSelectedFile(fileInput.files && fileInput.files[0]);
+        });
+
+        const prefersFinePointer = window.matchMedia("(pointer: fine)").matches && window.matchMedia("(max-width: 768px)").matches === false;
+        if (!prefersFinePointer) return;
+
+        const body = document.body;
+        const dot = document.getElementById("cursor-dot");
+        const ring = document.getElementById("cursor-ring");
+        body.classList.add("cursor-enhanced");
+
+        let tx = window.innerWidth / 2;
+        let ty = window.innerHeight / 2;
+        let dotX = tx;
+        let dotY = ty;
+        let ringX = tx;
+        let ringY = ty;
+
+        window.addEventListener("mousemove", function (event) {
+          tx = event.clientX;
+          ty = event.clientY;
+        });
+
+        function loop() {
+          dotX += (tx - dotX) * 0.18;
+          dotY += (ty - dotY) * 0.18;
+          ringX += (tx - ringX) * 0.09;
+          ringY += (ty - ringY) * 0.09;
+
+          dot.style.transform = "translate(" + (dotX - 3.5) + "px, " + (dotY - 3.5) + "px)";
+          ring.style.transform = "translate(" + (ringX - 13) + "px, " + (ringY - 13) + "px)";
+          requestAnimationFrame(loop);
+        }
+
+        requestAnimationFrame(loop);
+
+        document.querySelectorAll(interactiveSelector).forEach(function (node) {
+          node.addEventListener("mouseenter", function () {
+            body.classList.add("cursor-hover");
+          });
+          node.addEventListener("mouseleave", function () {
+            body.classList.remove("cursor-hover");
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

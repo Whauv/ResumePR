@@ -5,7 +5,8 @@ import GapAnalysisPanel from "../components/GapAnalysisPanel";
 import JobSummaryPanel from "../components/JobSummaryPanel";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
 import SkeletonBlock from "../components/SkeletonBlock";
-import { apiJson } from "../lib/api";
+import { runGapAnalysis } from "../lib/analysisApi";
+import { fetchLatestExtensionJob, parseJob } from "../lib/jobApi";
 import { isE2EMode } from "../lib/runtime";
 import { useAnalysisStore } from "../store/analysisStore";
 import { useAppStore } from "../store/appStore";
@@ -17,30 +18,6 @@ const tabs = [
   { id: "text", label: "Paste Text" },
   { id: "extension", label: "From Extension" }
 ];
-
-async function parseJob(body) {
-  return apiJson("/api/jobs/parse", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
-}
-
-async function fetchLatestExtensionJob() {
-  return apiJson("/api/jobs/latest/from-extension");
-}
-
-async function runGapAnalysis(resumeId, jobId) {
-  return apiJson("/api/analysis/gap", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ resume_id: resumeId, job_id: jobId })
-  });
-}
 
 export default function JobInputPage() {
   const e2eMode = isE2EMode();
@@ -60,7 +37,7 @@ export default function JobInputPage() {
   } = useJobStore();
   const { parsedResume, metadata } = useResumeStore();
   const { analysis, analysisState, analysisError, setAnalysis, setAnalysisState, setAnalysisError } = useAnalysisStore();
-  const { setActivePage, setPhase4TargetSection } = useAppStore();
+  const { setActivePage, setFocusSection } = useAppStore();
 
   useEffect(() => {
     if (e2eMode) {
@@ -129,7 +106,7 @@ export default function JobInputPage() {
   }
 
   function handleFixSection(section) {
-    setPhase4TargetSection(section);
+    setFocusSection(section);
     setActivePage("diff");
   }
 

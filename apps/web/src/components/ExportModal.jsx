@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { apiBlob, ApiError, withQuery } from "../lib/api";
 
 const templates = ["modern", "classic", "minimal"];
@@ -63,6 +64,7 @@ export default function ExportModal({ version, initialFormat = "pdf", onClose })
   const [state, setState] = useState("idle");
   const [error, setError] = useState("");
   const previewResume = useMemo(() => version?.resume_json || { contact: {}, skills: [], experience: [] }, [version]);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     setFormat(initialFormat);
@@ -90,11 +92,23 @@ export default function ExportModal({ version, initialFormat = "pdf", onClose })
     }
   }
 
-  if (!version) return null;
-
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-stone-950/40 p-4 backdrop-blur-sm">
-      <div className="max-h-[92vh] w-full max-w-5xl overflow-auto rounded-[2rem] border border-stone-200 bg-stone-100 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.25)]">
+    <AnimatePresence>
+      {version ? (
+        <motion.div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-stone-950/40 p-4 backdrop-blur-sm"
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.15 }}
+        >
+          <motion.div
+            className="max-h-[92vh] w-full max-w-5xl overflow-auto rounded-[2rem] border border-stone-200 bg-stone-100 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.25)]"
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.97, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: 8 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
+          >
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Export Resume</p>
@@ -157,7 +171,9 @@ export default function ExportModal({ version, initialFormat = "pdf", onClose })
             <ResumeHtml resume={previewResume} template={template} />
           </section>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }

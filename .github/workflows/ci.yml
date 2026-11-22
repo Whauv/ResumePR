@@ -12,7 +12,9 @@ env:
 
 jobs:
   api:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest rolled to 26.04, which Playwright (web job) cannot
+    # install browser deps for. Pin both jobs to a supported image.
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: apps/api
@@ -31,7 +33,7 @@ jobs:
         run: python -m compileall main.py src tests
 
   web:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: apps/web

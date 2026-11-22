@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
-import io
+from dataclasses import dataclass
 from datetime import datetime, UTC
+from pathlib import Path
 from uuid import uuid4
 
-from docx import Document
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from resumepr_api.models.schemas import (
@@ -16,69 +16,20 @@ from resumepr_api.models.schemas import (
     JobParseResponse,
     ParsedResume,
     ResumeUploadResponse,
-    ResumeVersion,
     ResumeVersionListResponse,
     ResumeVersionMetadata,
 )
 from resumepr_api.services.db import get_connection
+from resumepr_api.services.export import preserve_docx_format_with_edits
 from resumepr_api.services.gap_analyzer import analyze_gap
 from resumepr_api.services.parser import parse_resume
+from resumepr_api.services.versions import (
+    ORDER_BY_VERSION_DESC,
+    fetch_versions_by_resume,
+    row_to_version,
+)
 
 router = APIRouter(prefix="/api/resume", tags=["resume"])
-
-
-def normalize_text(value: str) -> str:
-    return " ".join(value.split()).strip().lower()
-
-
-def replace_paragraph_text(paragraph, new_text: str) -> None:
-    if paragraph.runs:
-        paragraph.runs[0].text = new_text
-        for run in paragraph.runs[1:]:
-            run.text = ""
-    else:
-        paragraph.add_run(new_text)
-
-
-def iter_doc_paragraphs(document: Document):
-    for paragraph in document.paragraphs:
-        yield paragraph
-    for table in document.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for paragraph in cell.paragraphs:
-                    yield paragraph
-
-
-def preserve_docx_format_with_edits(file_bytes: bytes, suggestions: list[EditSuggestion]) -> bytes:
-    document = Document(io.BytesIO(file_bytes))
-    paragraphs = list(iter_doc_paragraphs(document))
-    paragraph_map = {normalize_text(paragraph.text): paragraph for paragraph in paragraphs if paragraph.text.strip()}
-
-    for suggestion in suggestions:
-        original = normalize_text(suggestion.original_text)
-        if not original:
-            continue
-
-        paragraph = paragraph_map.get(original)
-        if paragraph:
-            replace_paragraph_text(paragraph, suggestion.suggested_text)
-            paragraph_map[normalize_text(suggestion.suggested_text)] = paragraph
-            continue
-
-        for paragraph in paragraphs:
-            text = paragraph.text or ""
-            normalized_text = normalize_text(text)
-            if original and original in normalized_text:
-                updated_text = text.replace(suggestion.original_text, suggestion.suggested_text)
-                if updated_text == text and suggestion.original_text.strip() != text.strip():
-                    continue
-                replace_paragraph_text(paragraph, updated_text)
-                break
-
-    buffer = io.BytesIO()
-    document.save(buffer)
-    return buffer.getvalue()
 
 
 def apply_suggestion_to_resume(resume_data: dict, suggestion: EditSuggestion) -> None:
@@ -165,12 +116,21 @@ async def upload_resume(request: Request, file: UploadFile = File(...)) -> Resum
     )
 
 
-@router.post("/apply-edits", response_model=ApplyEditsResponse)
-def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEditsResponse:
-    user_id = http_request.state.user_id
-    if not request.accepted_edit_ids:
-        raise HTTPException(status_code=400, detail="At least one accepted edit is required.")
+@dataclass
+class _ApplyEditsInputs:
+    raw_resume_json: str
+    source_file_type: str
+    original_file_bytes: bytes | None
+    suggestions: list[EditSuggestion]
+    job_id: str
+    job_payload: JobParseResponse
+    version_number: int
+    accepted_count: int
+    rejected_count: int
 
+
+def _load_apply_edits_inputs(user_id: str, request: ApplyEditsRequest) -> _ApplyEditsInputs:
+    """Read and validate everything apply-edits needs in one DB round-trip."""
     connection = get_connection()
     try:
         resume_row = connection.execute(
@@ -188,12 +148,12 @@ def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEdits
         if not suggestion_rows:
             raise HTTPException(status_code=404, detail="No matching suggestions found.")
 
-        batch_ids = {row[1] for row in suggestion_rows}
+        batch_ids = {row["batch_id"] for row in suggestion_rows}
         if len(batch_ids) != 1:
             raise HTTPException(status_code=400, detail="Accepted edits must come from a single suggestion batch.")
 
-        batch_id = suggestion_rows[0][1]
-        job_id = suggestion_rows[0][2]
+        batch_id = suggestion_rows[0]["batch_id"]
+        job_id = suggestion_rows[0]["job_id"]
 
         total_suggestions = connection.execute(
             "SELECT COUNT(*) FROM suggestions WHERE batch_id = ? AND user_id = ?",
@@ -214,42 +174,42 @@ def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEdits
     finally:
         connection.close()
 
-    resume_data = json.loads(resume_row[0])
-    source_file_type = (resume_row[1] or "").lower()
-    original_file_bytes = resume_row[2]
-    suggestions = [EditSuggestion.model_validate(json.loads(row[3])) for row in suggestion_rows]
-    for suggestion in suggestions:
-        apply_suggestion_to_resume(resume_data, suggestion)
-
-    preserved_docx_blob = None
-    if source_file_type == "docx" and original_file_bytes:
-        try:
-            preserved_docx_blob = preserve_docx_format_with_edits(original_file_bytes, suggestions)
-        except Exception:
-            preserved_docx_blob = None
-
-    updated_resume = ParsedResume.model_validate(resume_data)
-    version_id = str(uuid4())
-    version_number = int(version_count) + 1
+    suggestions = [EditSuggestion.model_validate(json.loads(row["suggestion_json"])) for row in suggestion_rows]
     accepted_count = len(suggestions)
-    rejected_count = int(total_suggestions) - accepted_count
-    job_payload = JobParseResponse.model_validate({"job_id": job_id, **json.loads(job_row[0])})
-    original_resume = ParsedResume.model_validate(json.loads(resume_row[0]))
-    gap_before = GapReport.model_validate(analyze_gap(original_resume.model_dump(), job_payload.model_dump()))
-    gap_after = GapReport.model_validate(analyze_gap(updated_resume.model_dump(), job_payload.model_dump()))
-    created_at = datetime.now(UTC).isoformat()
-    metadata = build_version_metadata(
-        version_number=version_number,
+    return _ApplyEditsInputs(
+        raw_resume_json=resume_row["parsed_json"],
+        source_file_type=(resume_row["file_type"] or "").lower(),
+        original_file_bytes=resume_row["original_file"],
+        suggestions=suggestions,
         job_id=job_id,
-        company_name=job_payload.company_name,
-        role=job_payload.job_title,
+        job_payload=JobParseResponse.model_validate({"job_id": job_id, **json.loads(job_row["parsed_json"])}),
+        version_number=int(version_count) + 1,
         accepted_count=accepted_count,
-        rejected_count=rejected_count,
-        created_at=created_at,
-        ats_score_before=gap_before.overall_score,
-        ats_score_after=gap_after.overall_score,
+        rejected_count=int(total_suggestions) - accepted_count,
     )
 
+
+def _preserved_docx_blob(inputs: _ApplyEditsInputs) -> bytes | None:
+    if inputs.source_file_type == "docx" and inputs.original_file_bytes:
+        try:
+            return preserve_docx_format_with_edits(inputs.original_file_bytes, inputs.suggestions)
+        except Exception:
+            return None
+    return None
+
+
+def _persist_new_version(
+    *,
+    version_id: str,
+    resume_id: str,
+    user_id: str,
+    inputs: _ApplyEditsInputs,
+    updated_resume: ParsedResume,
+    created_at: str,
+    ats_score_before: float,
+    ats_score_after: float,
+    preserved_docx_blob: bytes | None,
+) -> None:
     connection = get_connection()
     try:
         connection.execute(
@@ -262,18 +222,18 @@ def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEdits
             """,
             (
                 version_id,
-                request.resume_id,
+                resume_id,
                 user_id,
-                version_number,
-                job_id,
-                job_payload.company_name,
-                job_payload.job_title,
-                accepted_count,
-                rejected_count,
+                inputs.version_number,
+                inputs.job_id,
+                inputs.job_payload.company_name,
+                inputs.job_payload.job_title,
+                inputs.accepted_count,
+                inputs.rejected_count,
                 json.dumps(updated_resume.model_dump()),
                 created_at,
-                gap_before.overall_score,
-                gap_after.overall_score,
+                ats_score_before,
+                ats_score_after,
                 preserved_docx_blob,
             ),
         )
@@ -281,11 +241,52 @@ def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEdits
     finally:
         connection.close()
 
-    return ApplyEditsResponse(
+
+@router.post("/apply-edits", response_model=ApplyEditsResponse)
+def apply_edits(http_request: Request, request: ApplyEditsRequest) -> ApplyEditsResponse:
+    user_id = http_request.state.user_id
+    if not request.accepted_edit_ids:
+        raise HTTPException(status_code=400, detail="At least one accepted edit is required.")
+
+    inputs = _load_apply_edits_inputs(user_id, request)
+
+    resume_data = json.loads(inputs.raw_resume_json)
+    for suggestion in inputs.suggestions:
+        apply_suggestion_to_resume(resume_data, suggestion)
+
+    preserved_docx_blob = _preserved_docx_blob(inputs)
+    updated_resume = ParsedResume.model_validate(resume_data)
+    original_resume = ParsedResume.model_validate(json.loads(inputs.raw_resume_json))
+    gap_before = GapReport.model_validate(analyze_gap(original_resume.model_dump(), inputs.job_payload.model_dump()))
+    gap_after = GapReport.model_validate(analyze_gap(updated_resume.model_dump(), inputs.job_payload.model_dump()))
+    created_at = datetime.now(UTC).isoformat()
+    version_id = str(uuid4())
+
+    _persist_new_version(
         version_id=version_id,
+        resume_id=request.resume_id,
+        user_id=user_id,
+        inputs=inputs,
         updated_resume=updated_resume,
-        metadata=metadata,
+        created_at=created_at,
+        ats_score_before=gap_before.overall_score,
+        ats_score_after=gap_after.overall_score,
+        preserved_docx_blob=preserved_docx_blob,
     )
+
+    metadata = build_version_metadata(
+        version_number=inputs.version_number,
+        job_id=inputs.job_id,
+        company_name=inputs.job_payload.company_name,
+        role=inputs.job_payload.job_title,
+        accepted_count=inputs.accepted_count,
+        rejected_count=inputs.rejected_count,
+        created_at=created_at,
+        ats_score_before=gap_before.overall_score,
+        ats_score_after=gap_after.overall_score,
+    )
+
+    return ApplyEditsResponse(version_id=version_id, updated_resume=updated_resume, metadata=metadata)
 
 
 @router.get("/{resume_id}/versions", response_model=ResumeVersionListResponse)
@@ -293,36 +294,8 @@ def list_versions(request: Request, resume_id: str) -> ResumeVersionListResponse
     user_id = request.state.user_id
     connection = get_connection()
     try:
-        rows = connection.execute(
-            """
-            SELECT version_id, base_resume_id, user_id, version_number, job_id, company_name, role,
-                   accepted_count, rejected_count, resume_json, created_at, ats_score_before, ats_score_after
-            FROM resume_versions
-            WHERE base_resume_id = ? AND user_id = ?
-            ORDER BY version_number DESC
-            """,
-            (resume_id, user_id),
-        ).fetchall()
+        rows = fetch_versions_by_resume(connection, resume_id, user_id, order_by=ORDER_BY_VERSION_DESC)
     finally:
         connection.close()
 
-    versions = [
-        ResumeVersion(
-            version_id=row[0],
-            base_resume_id=row[1],
-            metadata=build_version_metadata(
-                version_number=row[3],
-                job_id=row[4],
-                company_name=row[5] or "",
-                role=row[6] or "",
-                accepted_count=row[7],
-                rejected_count=row[8],
-                created_at=row[10],
-                ats_score_before=float(row[11] or 0),
-                ats_score_after=float(row[12] or 0),
-            ),
-            resume_json=ParsedResume.model_validate(json.loads(row[9])),
-        )
-        for row in rows
-    ]
-    return ResumeVersionListResponse(versions=versions)
+    return ResumeVersionListResponse(versions=[row_to_version(row) for row in rows])

@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 export default function CollapsibleCard({ title, subtitle, defaultOpen = true, children }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const reduceMotion = useReducedMotion();
 
   return (
     <section className="glass-card overflow-hidden rounded-[2rem]">
@@ -18,7 +20,20 @@ export default function CollapsibleCard({ title, subtitle, defaultOpen = true, c
           {isOpen ? "Hide" : "Show"}
         </span>
       </button>
-      {isOpen ? <div className="border-t border-white/60 px-6 py-5">{children}</div> : null}
+      <AnimatePresence initial={false}>
+        {isOpen ? (
+          <motion.div
+            key="content"
+            initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={reduceMotion ? { height: 0, opacity: 0 } : { height: 0, opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.22, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-white/60 px-6 py-5">{children}</div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </section>
   );
 }

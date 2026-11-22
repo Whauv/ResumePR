@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import EmptyState from "../components/EmptyState";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
 import SkeletonBlock from "../components/SkeletonBlock";
-import { apiJson } from "../lib/api";
+import { uploadResume } from "../lib/resumeApi";
 import { useResumeStore } from "../store/resumeStore";
 
 const acceptedTypes = [
@@ -15,16 +15,6 @@ function fileBadge(file) {
   const extension = file.name.split(".").pop()?.toUpperCase();
   const icon = extension === "PDF" ? "PDF" : "DOCX";
   return { extension, icon };
-}
-
-async function uploadResume(file) {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  return apiJson("/api/resume/upload", {
-    method: "POST",
-    body: formData
-  });
 }
 
 export default function UploadPage() {
@@ -127,7 +117,7 @@ export default function UploadPage() {
                   type="button"
                   onClick={handleUpload}
                   disabled={uploadState === "loading"}
-                  className="inline-flex items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#01575c] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {uploadState === "loading" ? "Parsing..." : "Upload resume"}
                 </button>

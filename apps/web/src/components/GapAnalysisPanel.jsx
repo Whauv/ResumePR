@@ -1,28 +1,6 @@
-import { useEffect, useState } from "react";
+import useCountUp from "../hooks/useCountUp";
+import ChipList from "./ChipList";
 import SkeletonBlock from "./SkeletonBlock";
-
-function useCountUp(target) {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    let frameId;
-    const duration = 900;
-    const start = performance.now();
-
-    function tick(now) {
-      const progress = Math.min((now - start) / duration, 1);
-      setValue(target * progress);
-      if (progress < 1) {
-        frameId = requestAnimationFrame(tick);
-      }
-    }
-
-    frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
-  }, [target]);
-
-  return value;
-}
 
 function ProgressRing({ value }) {
   const animatedValue = useCountUp(value);
@@ -39,7 +17,7 @@ function ProgressRing({ value }) {
           cy="70"
           r={radius}
           fill="none"
-          stroke="#01696f"
+          stroke="var(--color-primary)"
           strokeWidth="12"
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -69,27 +47,6 @@ function MiniBar({ value }) {
   );
 }
 
-function ChipList({ items, tone }) {
-  const className =
-    tone === "missing"
-      ? "border-rose-200 bg-rose-50 text-rose-700"
-      : "border-emerald-200 bg-emerald-50 text-emerald-700";
-
-  if (!items?.length) {
-    return <p className="text-sm text-stone-500">None flagged here.</p>;
-  }
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
-        <span key={item} className={`rounded-full border px-3 py-2 text-sm font-medium ${className}`}>
-          {item}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function SectionCard({ title, report, onFix }) {
   return (
     <article className="glass-card rounded-[2rem] p-5">
@@ -106,11 +63,11 @@ function SectionCard({ title, report, onFix }) {
       <div className="mt-5 space-y-4">
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Matched Keywords</p>
-          <ChipList items={report.matched} tone="matched" />
+          <ChipList items={report.matched} tone="matched" emptyLabel="None flagged here." />
         </div>
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Missing Keywords</p>
-          <ChipList items={report.missing} tone="missing" />
+          <ChipList items={report.missing} tone="missing" emptyLabel="None flagged here." />
         </div>
       </div>
 
@@ -145,7 +102,7 @@ export default function GapAnalysisPanel({ report, analysisState, analysisError,
               type="button"
               onClick={onAnalyze}
               disabled={analysisState === "loading"}
-              className="mt-5 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#01575c] disabled:opacity-70"
+              className="mt-5 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:opacity-70"
             >
               Run Skills Gap Analysis
             </button>

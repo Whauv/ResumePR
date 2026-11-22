@@ -1,0 +1,1050 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ResumePR Landing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #080a0e;
+        --surface-1: #0d1017;
+        --surface-2: #111520;
+        --surface-3: #161b26;
+        --teal: #0d9488;
+        --teal-dark: #0b7c77;
+        --red: rgba(239, 68, 68, 0.8);
+        --green: #22c55e;
+        --blue: #3b82f6;
+        --warn: #f59e0b;
+        --text: #f1f5f9;
+        --text-2: #94a3b8;
+        --text-3: #475569;
+        --border: rgba(255, 255, 255, 0.07);
+        --border-teal: rgba(13, 148, 136, 0.28);
+        --teal-glow: rgba(13, 148, 136, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Geist", "Inter", sans-serif;
+      }
+
+      .page-bg {
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(circle at 16% 7%, rgba(13, 148, 136, 0.1), transparent 34%),
+          radial-gradient(circle at 88% 11%, rgba(59, 130, 246, 0.09), transparent 30%),
+          var(--bg);
+      }
+
+      .page-bg::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+        background-size: 18px 18px;
+      }
+
+      .wrap {
+        width: min(1200px, calc(100% - 3rem));
+        margin: 0 auto;
+      }
+
+      .nav-shell {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(8, 10, 14, 0.92);
+        backdrop-filter: blur(18px);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .nav-row {
+        min-height: 74px;
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .brand {
+        line-height: 1.1;
+      }
+
+      .brand-main {
+        margin: 0;
+        font-size: 1.03rem;
+        letter-spacing: -0.02em;
+        font-weight: 700;
+      }
+
+      .brand-sub {
+        margin: 0.36rem 0 0;
+        color: var(--text-3);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .nav-links a {
+        color: #64748b;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.94rem;
+        transition: color 150ms ease;
+      }
+
+      .nav-links a:hover {
+        color: #fff;
+      }
+
+      .cta {
+        color: #fff;
+        background: var(--teal);
+        border: 1px solid transparent;
+        text-decoration: none;
+        border-radius: 6px;
+        padding: 8px 18px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: background 150ms ease, box-shadow 150ms ease;
+      }
+
+      .cta:hover {
+        background: var(--teal-dark);
+        box-shadow: 0 0 20px rgba(13, 148, 136, 0.3);
+      }
+
+      .version-strip {
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid rgba(13, 148, 136, 0.1);
+        background: rgba(13, 148, 136, 0.05);
+        overflow: hidden;
+      }
+
+      .marquee {
+        display: flex;
+        min-height: 34px;
+        align-items: center;
+      }
+
+      .marquee span {
+        font-family: "JetBrains Mono", monospace;
+        color: var(--teal);
+        font-size: 11px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding-left: 100%;
+        animation: marquee 30s linear infinite;
+      }
+
+      .hero {
+        padding-top: 4.2rem;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 55% 45%;
+        gap: 1.5rem;
+        align-items: start;
+      }
+
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 4px;
+        background: rgba(13, 148, 136, 0.08);
+        border: 1px solid rgba(13, 148, 136, 0.22);
+        color: var(--teal);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 6px 10px;
+      }
+
+      .hero-badge svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      h1 {
+        margin: 1.2rem 0 0;
+        font-family: "Instrument Serif", Georgia, serif;
+        font-style: italic;
+        font-weight: 400;
+        line-height: 0.96;
+        letter-spacing: -0.01em;
+        font-size: clamp(2.8rem, 5.5vw, 5.4rem);
+      }
+
+      .hline {
+        display: block;
+        clip-path: inset(0 100% 0 0);
+        animation: reveal 0.65s ease-out forwards;
+      }
+
+      .hline:nth-child(1) { animation-delay: 0.03s; }
+      .hline:nth-child(2) { animation-delay: 0.13s; }
+      .hline:nth-child(3) { animation-delay: 0.23s; }
+      .hline:nth-child(4) { animation-delay: 0.33s; position: relative; }
+
+      .hline .teal {
+        color: var(--teal);
+      }
+
+      .strike-wrap {
+        position: relative;
+        display: inline-block;
+      }
+
+      .strike-wrap::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 56%;
+        height: 1px;
+        background: var(--red);
+        transform: scaleX(0);
+        transform-origin: left center;
+        animation: strike 0.6s ease-out 0.95s forwards;
+      }
+
+      .hero-body {
+        margin: 1.4rem 0 0;
+        max-width: 52ch;
+        color: var(--text-2);
+        line-height: 1.75;
+        font-size: 1rem;
+        opacity: 0;
+        animation: fade-in 0.5s ease-out 0.75s forwards;
+      }
+
+      .hero-actions {
+        margin-top: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+      }
+
+      .hero-btn {
+        text-decoration: none;
+        border-radius: 6px;
+        padding: 0.76rem 1.1rem;
+        font-size: 0.92rem;
+        font-weight: 600;
+        transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, color 150ms ease;
+      }
+
+      .hero-btn.primary {
+        background: var(--teal);
+        color: #fff;
+      }
+
+      .hero-btn.primary:hover {
+        background: var(--teal-dark);
+        box-shadow: 0 0 20px var(--teal-glow);
+      }
+
+      .hero-btn.secondary {
+        border: 1px solid var(--border);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .hero-btn.secondary:hover {
+        border-color: rgba(255, 255, 255, 0.16);
+      }
+
+      .pipeline {
+        margin-top: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+
+      .stage {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 999px;
+        padding: 0.56rem 0.8rem;
+      }
+
+      .stage.active {
+        border-color: var(--border-teal);
+        background: rgba(13, 148, 136, 0.07);
+      }
+
+      .stage-label {
+        margin: 0;
+        color: var(--text-2);
+        font-size: 10px;
+        font-family: "JetBrains Mono", monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .stage-value {
+        margin: 0.22rem 0 0;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .pipe-arrow {
+        color: var(--text-3);
+        font-size: 15px;
+        position: relative;
+      }
+
+      .pipe-arrow::after {
+        content: "";
+        position: absolute;
+        inset: -2px -6px;
+        border-radius: 999px;
+        background: rgba(13, 148, 136, 0.1);
+        opacity: 0;
+        animation: pulse-run 1.4s infinite;
+      }
+
+      .hero-right {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .diff-panel {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      }
+
+      .diff-head {
+        padding: 0.8rem 0.95rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-2);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.7rem;
+      }
+
+      .diff-file {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--text-2);
+      }
+
+      .teal-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--teal);
+      }
+
+      .version-pill {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--blue);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        background: rgba(59, 130, 246, 0.08);
+        border-radius: 999px;
+        padding: 0.3rem 0.58rem;
+      }
+
+      .diff-body {
+        padding: 0.9rem;
+      }
+
+      .diff-row {
+        border: 1px solid var(--border);
+        background: var(--surface-3);
+        border-radius: 8px;
+        padding: 0.55rem 0.65rem;
+        margin-bottom: 0.52rem;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 0.5rem;
+        align-items: center;
+        opacity: 0;
+        transform: translateY(4px);
+        animation: row-in 0.34s ease-out forwards;
+      }
+
+      .diff-row:nth-child(1) { animation-delay: 0.12s; }
+      .diff-row:nth-child(2) { animation-delay: 0.2s; }
+      .diff-row:nth-child(3) { animation-delay: 0.28s; }
+      .diff-row:nth-child(4) { animation-delay: 0.36s; }
+      .diff-row:nth-child(5) { animation-delay: 0.44s; }
+
+      .line-no {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--text-3);
+      }
+
+      .change {
+        font-size: 12px;
+        color: var(--text-2);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .change .del {
+        color: var(--red);
+      }
+
+      .change .add {
+        color: var(--green);
+      }
+
+      .status {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        border-radius: 999px;
+        padding: 0.24rem 0.48rem;
+        text-transform: uppercase;
+      }
+
+      .status.accept {
+        color: var(--green);
+        border: 1px solid rgba(34, 197, 94, 0.35);
+        background: rgba(34, 197, 94, 0.1);
+      }
+
+      .status.reject {
+        color: #fca5a5;
+        border: 1px solid rgba(239, 68, 68, 0.28);
+        background: rgba(239, 68, 68, 0.11);
+      }
+
+      .diff-row:hover {
+        border-color: rgba(255, 255, 255, 0.16);
+      }
+
+      .aside-copy {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1rem;
+      }
+
+      .eyebrow {
+        margin: 0;
+        color: var(--teal);
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .h2 {
+        margin: 0.7rem 0 0;
+        font-size: clamp(1.6rem, 2.4vw, 2rem);
+        line-height: 1.26;
+      }
+
+      .subcards {
+        margin-top: 0.9rem;
+        display: grid;
+        gap: 0.7rem;
+      }
+
+      .sub {
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        border-radius: 10px;
+        padding: 0.8rem;
+      }
+
+      .sub h4 {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .sub p {
+        margin: 0.45rem 0 0;
+        color: var(--text-2);
+        line-height: 1.6;
+        font-size: 13px;
+      }
+
+      .quick {
+        margin-top: 0.9rem;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        padding: 0.8rem;
+      }
+
+      .quick h4 {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .quick .q-links {
+        margin-top: 0.65rem;
+        display: grid;
+        gap: 0.55rem;
+      }
+
+      .quick a {
+        text-decoration: none;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.62rem 0.7rem;
+        font-size: 13px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      section.block {
+        margin-top: 3.2rem;
+      }
+
+      .section-head p {
+        margin: 0;
+      }
+
+      .section-head .eyebrow {
+        margin-bottom: 0.4rem;
+      }
+
+      .section-head h3 {
+        margin: 0;
+        font-size: clamp(1.7rem, 3vw, 2.25rem);
+        line-height: 1.2;
+      }
+
+      .section-head .desc {
+        margin-top: 0.8rem;
+        color: var(--text-2);
+        line-height: 1.7;
+        max-width: 64ch;
+      }
+
+      .feature-grid {
+        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem;
+      }
+
+      .feature-card {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+      }
+
+      .feature-card .lbl {
+        margin: 0;
+        font-size: 10px;
+        font-family: "JetBrains Mono", monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--teal);
+      }
+
+      .feature-card h4 {
+        margin: 0.55rem 0 0;
+        font-size: 1.06rem;
+        line-height: 1.35;
+      }
+
+      .feature-card p {
+        margin: 0.58rem 0 0;
+        color: var(--text-2);
+        line-height: 1.67;
+        font-size: 13px;
+      }
+
+      .workflow-grid {
+        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem;
+      }
+
+      .workflow-card {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+      }
+
+      .workflow-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .step {
+        color: var(--teal);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .tag {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.24rem 0.46rem;
+        color: var(--text-2);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+      }
+
+      .workflow-card h4 {
+        margin: 0.7rem 0 0;
+        font-size: 1.06rem;
+      }
+
+      .workflow-card p {
+        margin: 0.5rem 0 0;
+        color: var(--text-2);
+        line-height: 1.67;
+        font-size: 13px;
+      }
+
+      .install-grid {
+        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: 42% 58%;
+        gap: 0.85rem;
+      }
+
+      .install-main {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+      }
+
+      .install-main h3 {
+        margin: 0.5rem 0 0;
+        font-size: 1.7rem;
+      }
+
+      .install-main p {
+        margin: 0.6rem 0 0;
+        color: var(--text-2);
+        line-height: 1.7;
+        font-size: 14px;
+      }
+
+      .cmds {
+        margin-top: 0.8rem;
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .cmd {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-3);
+        padding: 0.65rem 0.7rem;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+      }
+
+      .install-steps {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+      }
+
+      .install-step {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0.9rem;
+      }
+
+      .install-step h4 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .install-step p {
+        margin: 0.5rem 0 0;
+        color: var(--text-2);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+
+      .ready {
+        margin: 3rem 0 2.2rem;
+        border: 1px solid var(--border);
+        background: var(--surface-1);
+        border-radius: 14px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .ready .left {
+        max-width: 70ch;
+      }
+
+      .ready h3 {
+        margin: 0.55rem 0 0;
+        font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+      }
+
+      .ready p {
+        margin: 0.6rem 0 0;
+        color: var(--text-2);
+        line-height: 1.72;
+      }
+
+      .ready-actions {
+        display: flex;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+      }
+
+      .ready-actions a {
+        text-decoration: none;
+        border-radius: 6px;
+        padding: 0.72rem 1rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .ready-actions .open {
+        background: var(--teal);
+        color: #fff;
+      }
+
+      .ready-actions .open:hover {
+        background: var(--teal-dark);
+      }
+
+      .ready-actions .repo {
+        border: 1px solid var(--border);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      @keyframes marquee {
+        to { transform: translateX(-100%); }
+      }
+
+      @keyframes reveal {
+        from { clip-path: inset(0 100% 0 0); }
+        to { clip-path: inset(0 0 0 0); }
+      }
+
+      @keyframes strike {
+        to { transform: scaleX(1); }
+      }
+
+      @keyframes fade-in {
+        to { opacity: 1; }
+      }
+
+      @keyframes pulse-run {
+        0% { opacity: 0; }
+        45% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+
+      @keyframes row-in {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--teal);
+        outline-offset: 2px;
+      }
+
+      @media (max-width: 1100px) {
+        .hero-grid { grid-template-columns: 1fr; }
+        .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .workflow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .install-grid { grid-template-columns: 1fr; }
+      }
+
+      @media (max-width: 760px) {
+        .wrap { width: calc(100% - 1.4rem); }
+        .nav-row { grid-template-columns: 1fr; padding: 0.65rem 0; }
+        .nav-links { flex-wrap: wrap; }
+        .feature-grid { grid-template-columns: 1fr; }
+        .workflow-grid { grid-template-columns: 1fr; }
+        .install-steps { grid-template-columns: 1fr; }
+        .ready { flex-direction: column; align-items: flex-start; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-bg"></div>
+
+    <header class="nav-shell">
+      <div class="wrap nav-row">
+        <div class="brand">
+          <p class="brand-main">RESUMEPR</p>
+          <p class="brand-sub">Resume tailoring with pull request clarity</p>
+        </div>
+        <nav class="nav-links">
+          <a href="#how-it-works">How it works</a>
+          <a href="#install">Install</a>
+          <a href="https://github.com/Whauv/ResumePR" target="_blank" rel="noreferrer">GitHub Repo</a>
+        </nav>
+        <a class="cta" href="/app">Open Product</a>
+      </div>
+      <div class="version-strip">
+        <div class="wrap marquee">
+          <span>v1.0 · Section-level gap analysis · Accept/reject diffs · Version history · Chrome extension sync · FastAPI + NLP backend · Firebase auth ·</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap hero">
+      <section class="hero-grid">
+        <div>
+          <span class="hero-badge">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 5v6m0 0a3 3 0 100 6 3 3 0 000-6zm0 0h10m0 0a3 3 0 110 6 3 3 0 010-6zm0 0V5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+            Resume review workflow for real job applications
+          </span>
+          <h1>
+            <span class="hline">Turn resume tailoring</span>
+            <span class="hline">into a <span class="teal">review flow</span></span>
+            <span class="hline">instead of a</span>
+            <span class="hline"><span class="strike-wrap">black-box rewrite.</span></span>
+          </h1>
+          <p class="hero-body">
+            ResumePR compares a resume against a live job description, surfaces section-level gaps, generates targeted AI edits, and lets the user accept or reject each suggestion one by one before exporting a final version.
+          </p>
+          <div class="hero-actions">
+            <a class="hero-btn primary" href="/app">Launch the app</a>
+            <a class="hero-btn secondary" href="https://github.com/Whauv/ResumePR" target="_blank" rel="noreferrer">View source on GitHub</a>
+          </div>
+          <div class="pipeline">
+            <div class="stage">
+              <p class="stage-label">Input</p>
+              <p class="stage-value">Resume upload, URL ingestion, raw job text, and Chrome extension sync.</p>
+            </div>
+            <span class="pipe-arrow">→</span>
+            <div class="stage active">
+              <p class="stage-label">Review</p>
+              <p class="stage-value">Gap analysis, diff review, edit approval, and version comparisons.</p>
+            </div>
+            <span class="pipe-arrow">→</span>
+            <div class="stage">
+              <p class="stage-label">Output</p>
+              <p class="stage-value">Saved tailored resumes plus export and restore support for each application.</p>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-right">
+          <article class="diff-panel">
+            <div class="diff-head">
+              <div class="diff-file"><span class="teal-dot"></span>resume-v2.diff</div>
+              <span class="version-pill">v2 ← v1</span>
+            </div>
+            <div class="diff-body">
+              <div class="diff-row">
+                <span class="line-no">L18</span>
+                <span class="change"><span class="del">- built dashboards</span> <span class="add">+ built analytics dashboards with SQL + Python</span></span>
+                <span class="status accept">accept</span>
+              </div>
+              <div class="diff-row">
+                <span class="line-no">L24</span>
+                <span class="change"><span class="del">- improved process</span> <span class="add">+ improved release process, cutting cycle time by 28%</span></span>
+                <span class="status accept">accept</span>
+              </div>
+              <div class="diff-row">
+                <span class="line-no">L31</span>
+                <span class="change"><span class="del">- worked with team</span> <span class="add">+ partnered with product + design on A/B experiments</span></span>
+                <span class="status reject">reject</span>
+              </div>
+              <div class="diff-row">
+                <span class="line-no">L39</span>
+                <span class="change"><span class="del">- managed deployment</span> <span class="add">+ managed CI/CD deployment workflows in GitHub Actions</span></span>
+                <span class="status accept">accept</span>
+              </div>
+              <div class="diff-row">
+                <span class="line-no">L44</span>
+                <span class="change"><span class="del">- mentored interns</span> <span class="add">+ mentored 3 interns through sprint planning and code reviews</span></span>
+                <span class="status accept">accept</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="aside-copy">
+            <p class="eyebrow">Why this product exists</p>
+            <h2 class="h2">ResumePR helps users tailor resumes without losing trust in the final wording.</h2>
+            <div class="subcards">
+              <section class="sub">
+                <h4>Problem</h4>
+                <p>Most resume tools either give a shallow ATS score or rewrite content so aggressively that the user stops trusting it.</p>
+              </section>
+              <section class="sub">
+                <h4>Approach</h4>
+                <p>This product keeps the user in control by surfacing targeted, job-aware suggestions against the original resume text.</p>
+              </section>
+              <section class="sub">
+                <h4>Built with</h4>
+                <p>React, FastAPI, Firebase Auth, local NLP tooling, and free-tier AI providers for practical portfolio-ready deployment.</p>
+              </section>
+            </div>
+            <div class="quick">
+              <h4>Quick start links</h4>
+              <div class="q-links">
+                <a href="/login">Sign in to ResumePR</a>
+                <a href="https://github.com/Whauv/ResumePR" target="_blank" rel="noreferrer">Open the repository</a>
+              </div>
+            </div>
+          </article>
+        </aside>
+      </section>
+
+      <section class="block">
+        <header class="section-head">
+          <p class="eyebrow">What users get</p>
+          <h3>A product page that sets expectations before the workspace opens.</h3>
+          <p class="desc">This landing page makes the project easier to understand for recruiters, collaborators, and first-time users before they enter the tool itself.</p>
+        </header>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <p class="lbl">Pull Request Resume Review</p>
+            <h4>Accept or reject every suggested edit.</h4>
+            <p>ResumePR treats resume tailoring like a code review, so users can inspect before-and-after wording instead of accepting a full rewrite blindly.</p>
+          </article>
+          <article class="feature-card">
+            <p class="lbl">Section-Level Gap Analysis</p>
+            <h4>See what is missing by skills, summary, and experience.</h4>
+            <p>The product breaks down ATS alignment per section and highlights the highest-value missing keywords before any AI edits are proposed.</p>
+          </article>
+          <article class="feature-card">
+            <p class="lbl">Version History</p>
+            <h4>Keep every tailored version tied to a job application.</h4>
+            <p>Users can compare revisions, restore older variants, and export the resume version that best fits a specific company and role.</p>
+          </article>
+          <article class="feature-card">
+            <p class="lbl">Extension Sync</p>
+            <h4>Pull job descriptions directly from supported job boards.</h4>
+            <p>The Chrome extension captures active-tab job details and sends them into the web app so the editing workflow starts with less manual copy-paste.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="block" id="how-it-works">
+        <header class="section-head">
+          <p class="eyebrow">Workflow</p>
+          <h3>How ResumePR moves from job posting to polished export.</h3>
+        </header>
+        <div class="workflow-grid">
+          <article class="workflow-card">
+            <div class="workflow-top"><span class="step">Step 01</span><span class="tag">Review flow</span></div>
+            <h4>Upload a source resume</h4>
+            <p>Import a PDF or DOCX resume so ResumePR can parse the structure into summary, skills, education, and experience bullets.</p>
+          </article>
+          <article class="workflow-card">
+            <div class="workflow-top"><span class="step">Step 02</span><span class="tag">Review flow</span></div>
+            <h4>Ingest a job description</h4>
+            <p>Paste a job URL, paste raw text, or use the extension to pull the job description from the page you are already viewing.</p>
+          </article>
+          <article class="workflow-card">
+            <div class="workflow-top"><span class="step">Step 03</span><span class="tag">Review flow</span></div>
+            <h4>Review the skills gap</h4>
+            <p>Inspect matched keywords, missing requirements, ATS red flags, and section-by-section alignment before making any changes.</p>
+          </article>
+          <article class="workflow-card">
+            <div class="workflow-top"><span class="step">Step 04</span><span class="tag">Review flow</span></div>
+            <h4>Approve only the edits you trust</h4>
+            <p>Generate targeted AI suggestions, accept or reject them one by one, then save a new version and export the final document.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="block" id="install">
+        <div class="install-grid">
+          <article class="install-main">
+            <p class="eyebrow">Install</p>
+            <h3>Set up the full stack locally.</h3>
+            <p>The repo already contains the web app, API, and Chrome extension. These are the core steps users need before trying the product.</p>
+            <div class="cmds">
+              <div class="cmd">git clone https://github.com/Whauv/ResumePR.git</div>
+              <div class="cmd">cd ResumePR</div>
+              <div class="cmd">npm run dev:web</div>
+              <div class="cmd">uvicorn resumepr_api.main:app --reload --app-dir apps/api/src</div>
+            </div>
+          </article>
+          <div class="install-steps">
+            <article class="install-step">
+              <h4>1. Clone and configure</h4>
+              <p>Clone the repo, create the backend and frontend env files, and add your Firebase plus Groq or Gemini credentials.</p>
+            </article>
+            <article class="install-step">
+              <h4>2. Start the backend</h4>
+              <p>Install Python dependencies, download the spaCy model, and run the FastAPI server on port 8000.</p>
+            </article>
+            <article class="install-step">
+              <h4>3. Start the frontend</h4>
+              <p>Install the Vite app dependencies and run the web client on port 5173.</p>
+            </article>
+            <article class="install-step">
+              <h4>4. Load the extension</h4>
+              <p>Enable Chrome developer mode, load the unpacked extension folder, and start sending job descriptions into the product.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="ready">
+        <div class="left">
+          <p class="eyebrow">Ready to try it</p>
+          <h3>Use the landing page as the front door, then move into the authenticated product workspace.</h3>
+          <p>The GitHub link gives technical context, and the product link drops users into the actual app you have already built.</p>
+        </div>
+        <div class="ready-actions">
+          <a class="open" href="/app">Open ResumePR</a>
+          <a class="repo" href="https://github.com/Whauv/ResumePR" target="_blank" rel="noreferrer">Explore the repo</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

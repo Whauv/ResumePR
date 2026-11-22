@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from resumepr_api.models.schemas import JobParseRequest, JobParseResponse, ParsedJob
 from resumepr_api.services.db import get_connection
 from resumepr_api.services.keyword_extractor import extract_keywords
+from resumepr_api.services.text_utils import collapse_whitespace as clean_text
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 JOB_BOARD_SELECTORS = {
@@ -19,10 +20,6 @@ JOB_BOARD_SELECTORS = {
     "workday": [".css-129m7dg", ".job-description"],
     "lever": [".posting-description"],
 }
-
-
-def clean_text(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
 
 
 def detect_board(url: str) -> str | None:

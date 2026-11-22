@@ -11,9 +11,18 @@ export default function ResumePreviewPanel({ parsedResume, metadata }) {
           <div className="space-y-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-400">Contact</p>
-              <pre className="mt-2 overflow-x-auto rounded-[1.4rem] border border-stone-200/80 bg-white/70 p-4 text-sm text-stone-700">
-                {JSON.stringify(parsedResume.contact, null, 2)}
-              </pre>
+              {Object.entries(parsedResume.contact || {}).length ? (
+                <dl className="mt-2 grid gap-1 rounded-[1.4rem] border border-stone-200/80 bg-white/70 p-4 text-sm text-stone-700">
+                  {Object.entries(parsedResume.contact).map(([key, value]) => (
+                    <div key={key} className="flex gap-2">
+                      <dt className="font-medium capitalize text-stone-500">{key}:</dt>
+                      <dd className="text-stone-700">{String(value)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="mt-2 text-sm text-stone-500">No contact details detected yet.</p>
+              )}
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-400">Summary</p>

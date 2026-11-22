@@ -34,7 +34,9 @@ def test_gap_analyzer_reports_missing_keywords_and_flags():
 
     report = analyze_gap(resume_json, job_json)
 
-    assert report["overall_score"] >= 0
+    # A resume that genuinely matches part of the job must score above zero and
+    # stay within the 0-100 band (the earlier `>= 0` assertion was always true).
+    assert 0 < report["overall_score"] <= 100
     assert "Python" in report["sections"]["skills"]["matched"]
     assert "AWS" in report["sections"]["skills"]["missing"]
     assert "Docker" in report["top_missing_keywords"]

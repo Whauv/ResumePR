@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from typing import Any
 from uuid import uuid4
@@ -9,6 +8,7 @@ from uuid import uuid4
 import httpx
 from pydantic import BaseModel, ValidationError
 
+from resumepr_api.config import get_settings
 from resumepr_api.models.schemas import EditSuggestion
 
 try:
@@ -79,7 +79,7 @@ def parse_suggestions(raw_text: str) -> list[EditSuggestion]:
 
 
 def generate_with_groq(api_key: str, prompt: str) -> list[EditSuggestion]:
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    model = get_settings().groq_model
     with httpx.Client(timeout=60.0) as client:
         response = client.post(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -123,8 +123,9 @@ def generate_with_gemini(api_key: str, prompt: str) -> list[EditSuggestion]:
 
 def generate_suggestions(resume_json: dict[str, Any], job_json: dict[str, Any], gap_report: dict[str, Any]) -> list[EditSuggestion]:
     prompt = build_prompt(resume_json, job_json, gap_report)
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    settings = get_settings()
+    groq_api_key = settings.groq_api_key
+    gemini_api_key = settings.gemini_api_key
     errors: list[str] = []
 
     if groq_api_key:
