@@ -89,7 +89,7 @@ describe("JobInputPage", () => {
     });
     useAppStore.setState({
       activePage: "jobs",
-      phase4TargetSection: "",
+      focusSection: "",
       latestVersionId: ""
     });
   });

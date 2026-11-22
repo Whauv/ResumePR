@@ -7,9 +7,11 @@ test("theme toggle works and resume page renders seeded data", async ({ page }) 
   await expect(page.getByText("Jane Doe")).toBeVisible();
 
   const html = page.locator("html");
-  const initialTheme = await html.getAttribute("data-theme");
-  await page.getByRole("button", { name: /switch to/i }).click();
-  await expect(html).not.toHaveAttribute("data-theme", initialTheme || "light");
+  await expect(html).toHaveAttribute("data-theme", "light");
+  await page.getByTestId("theme-toggle").click();
+  await expect(html).toHaveAttribute("data-theme", "dark");
+  await page.getByTestId("theme-toggle").click();
+  await expect(html).toHaveAttribute("data-theme", "light");
 });
 
 test("command palette and diff editor smoke path render seeded workflow", async ({ page }) => {

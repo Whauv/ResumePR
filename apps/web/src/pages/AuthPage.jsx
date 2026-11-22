@@ -1,23 +1,24 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup
 } from "firebase/auth";
-import AmbientBackdrop from "../components/AmbientBackdrop";
 import { googleProvider, firebaseAuth } from "../lib/firebase";
-import { navigateTo } from "../lib/navigation";
 import { useAuthStore } from "../store/authStore";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
   const { authMode, setAuthMode, setAuthError, authError } = useAuthStore();
 
   useEffect(() => {
-    if (window.location.pathname === "/signup") setAuthMode("signup");
-    if (window.location.pathname === "/login") setAuthMode("login");
-  }, [setAuthMode]);
+    if (location.pathname === "/signup") setAuthMode("signup");
+    if (location.pathname === "/login") setAuthMode("login");
+  }, [location.pathname, setAuthMode]);
 
   async function handleEmailAuth() {
     try {
@@ -26,7 +27,7 @@ export default function AuthPage() {
       } else {
         await signInWithEmailAndPassword(firebaseAuth, email, password);
       }
-      navigateTo("/app", { replace: true });
+      navigate("/app", { replace: true });
     } catch (error) {
       setAuthError(error.message);
     }
@@ -35,7 +36,7 @@ export default function AuthPage() {
   async function handleGoogleAuth() {
     try {
       await signInWithPopup(firebaseAuth, googleProvider);
-      navigateTo("/app", { replace: true });
+      navigate("/app", { replace: true });
     } catch (error) {
       setAuthError(error.message);
     }
@@ -43,7 +44,6 @@ export default function AuthPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-12 text-stone-900">
-      <AmbientBackdrop />
       <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <section className="space-y-6">
           <span className="inline-flex rounded-full border border-accent/20 bg-white/70 px-4 py-2 text-sm font-semibold text-accent shadow-panel backdrop-blur-xl">
@@ -127,7 +127,7 @@ export default function AuthPage() {
               placeholder="Password"
               className="w-full rounded-[1.4rem] border border-stone-200 bg-white/80 px-4 py-3.5 text-sm outline-none transition focus:border-accent focus:bg-white"
             />
-            <button type="button" onClick={handleEmailAuth} className="w-full rounded-full bg-accent px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#01575c]">
+            <button type="button" onClick={handleEmailAuth} className="w-full rounded-full bg-accent px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)]">
               {authMode === "signup" ? "Create account" : "Sign in"}
             </button>
             <button type="button" onClick={handleGoogleAuth} className="w-full rounded-full bg-stone-900 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-stone-800">

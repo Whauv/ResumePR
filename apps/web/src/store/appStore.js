@@ -2,10 +2,9 @@ import { create } from "zustand";
 
 export const useAppStore = create((set) => ({
   activePage: "resume",
-  phase4TargetSection: "",
+  focusSection: "",
   latestVersionId: "",
   setActivePage: (activePage) => set({ activePage }),
-  setPhase4TargetSection: (phase4TargetSection) => set({ phase4TargetSection }),
-  clearPhase4TargetSection: () => set({ phase4TargetSection: "" }),
+  setFocusSection: (focusSection) => set({ focusSection }),
   setLatestVersionId: (latestVersionId) => set({ latestVersionId })
 }));

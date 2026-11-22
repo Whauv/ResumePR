@@ -1,24 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiJson } from "../lib/api";
 import { isE2EMode } from "../lib/runtime";
+import { fetchFullVersions, fetchVersionDiff, fetchVersionSummaries } from "../lib/versionsApi";
 import ExportModal from "../components/ExportModal";
 import ResumePreviewPanel from "../components/ResumePreviewPanel";
 import { useAppStore } from "../store/appStore";
 import { useResumeStore } from "../store/resumeStore";
-
-async function fetchVersionSummaries(resumeId) {
-  const payload = await apiJson(`/api/versions/${resumeId}`);
-  return payload.versions;
-}
-
-async function fetchFullVersions(resumeId) {
-  const payload = await apiJson(`/api/resume/${resumeId}/versions`);
-  return payload.versions;
-}
-
-async function fetchVersionDiff(versionId) {
-  return apiJson(`/api/versions/${versionId}/diff`);
-}
 
 function relativeTime(timestamp) {
   const now = Date.now();

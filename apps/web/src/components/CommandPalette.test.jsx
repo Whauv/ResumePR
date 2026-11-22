@@ -8,7 +8,7 @@ describe("CommandPalette", () => {
   beforeEach(() => {
     useAppStore.setState({
       activePage: "resume",
-      phase4TargetSection: "",
+      focusSection: "",
       latestVersionId: ""
     });
   });

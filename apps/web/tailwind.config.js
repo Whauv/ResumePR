@@ -3,7 +3,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: "#01696f"
+        // Single brand-color source; theme-aware via the CSS channels in index.css.
+        accent: "rgb(var(--color-primary-rgb) / <alpha-value>)"
       },
       fontFamily: {
         sans: ["Manrope", "Segoe UI", "sans-serif"],

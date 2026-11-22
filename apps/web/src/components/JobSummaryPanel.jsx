@@ -1,25 +1,5 @@
+import ChipList from "./ChipList";
 import CollapsibleCard from "./CollapsibleCard";
-
-function SkillChips({ items, tone }) {
-  const styles =
-    tone === "accent"
-      ? "border-accent/20 bg-accent/10 text-accent"
-      : "border-stone-200 bg-stone-100 text-stone-700";
-
-  if (!items?.length) {
-    return <p className="text-sm text-stone-500">No keywords detected yet.</p>;
-  }
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
-        <span key={item} className={`rounded-full border px-3 py-2 text-sm font-medium ${styles}`}>
-          {item}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 export default function JobSummaryPanel({ parsedJob }) {
   return (
@@ -33,13 +13,13 @@ export default function JobSummaryPanel({ parsedJob }) {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-400">Required Skills</p>
               <div className="mt-3">
-                <SkillChips items={parsedJob.required_skills} tone="accent" />
+                <ChipList items={parsedJob.required_skills} tone="accent" emptyLabel="No keywords detected yet." />
               </div>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone-400">Preferred Skills</p>
               <div className="mt-3">
-                <SkillChips items={parsedJob.preferred_skills} tone="muted" />
+                <ChipList items={parsedJob.preferred_skills} tone="muted" emptyLabel="No keywords detected yet." />
               </div>
             </div>
           </div>
